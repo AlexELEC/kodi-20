@@ -66,6 +66,7 @@ CGUIDialogPVRChannelManager::CGUIDialogPVRChannelManager() :
     CGUIDialog(WINDOW_DIALOG_PVR_CHANNEL_MANAGER, "DialogPVRChannelManager.xml"),
     m_channelItems(new CFileItemList)
 {
+  SetRadio(false);
 }
 
 CGUIDialogPVRChannelManager::~CGUIDialogPVRChannelManager()
@@ -130,9 +131,9 @@ bool CGUIDialogPVRChannelManager::OnActionMove(const CAction& action)
           unsigned int iNewSelect = bMoveUp ? m_iSelected - 1 : m_iSelected + 1;
           if (m_channelItems->Get(iNewSelect)->GetProperty("Number").asString() != "-")
           {
-            strNumber = StringUtils::Format("%i", m_iSelected+1);
+            strNumber = StringUtils::Format("{}", m_iSelected + 1);
             m_channelItems->Get(iNewSelect)->SetProperty("Number", strNumber);
-            strNumber = StringUtils::Format("%i", iNewSelect+1);
+            strNumber = StringUtils::Format("{}", iNewSelect + 1);
             m_channelItems->Get(m_iSelected)->SetProperty("Number", strNumber);
           }
           m_channelItems->Swap(iNewSelect, m_iSelected);
@@ -159,7 +160,6 @@ void CGUIDialogPVRChannelManager::OnInitWindow()
   CGUIDialog::OnInitWindow();
 
   m_iSelected = 0;
-  m_bIsRadio = false;
   m_bMovingMode = false;
   m_bContainsChanges = false;
   m_bAllowNewChannel = false;
@@ -168,8 +168,6 @@ void CGUIDialogPVRChannelManager::OnInitWindow()
   const std::shared_ptr<CSettings> settings = CServiceBroker::GetSettingsComponent()->GetSettings();
   m_bAllowRenumber = !settings->GetBool(CSettings::SETTING_PVRMANAGER_BACKENDCHANNELORDER) &&
                      !settings->GetBool(CSettings::SETTING_PVRMANAGER_USEBACKENDCHANNELNUMBERS);
-
-  SetProperty("IsRadio", "");
 
   Update();
 
@@ -196,6 +194,12 @@ void CGUIDialogPVRChannelManager::OnDeinitWindow(int nextWindowID)
   Clear();
 
   CGUIDialog::OnDeinitWindow(nextWindowID);
+}
+
+void CGUIDialogPVRChannelManager::SetRadio(bool bIsRadio)
+{
+  m_bIsRadio = bIsRadio;
+  SetProperty("IsRadio", m_bIsRadio ? "true" : "");
 }
 
 void CGUIDialogPVRChannelManager::Open(const std::shared_ptr<CFileItem>& initialSelection)
@@ -716,7 +720,7 @@ void CGUIDialogPVRChannelManager::Update()
   std::shared_ptr<CFileItem> channelFile;
   for (const auto& member : groupMembers)
   {
-    channelFile = std::make_shared<CFileItem>(member->Channel());
+    channelFile = std::make_shared<CFileItem>(member);
     if (!channelFile || !channelFile->HasPVRChannelInfoTag())
       continue;
     const std::shared_ptr<CPVRChannel> channel(channelFile->GetPVRChannelInfoTag());
@@ -727,7 +731,8 @@ void CGUIDialogPVRChannelManager::Update()
     channelFile->SetProperty("Icon", channel->IconPath());
     channelFile->SetProperty("EPGSource", 0);
     channelFile->SetProperty("ParentalLocked", channel->IsLocked());
-    channelFile->SetProperty("Number", StringUtils::Format("%i", channel->ChannelNumber().GetChannelNumber()));
+    channelFile->SetProperty("Number",
+                             StringUtils::Format("{}", member->ChannelNumber().GetChannelNumber()));
 
     const std::shared_ptr<CPVRClient> client = CServiceBroker::GetPVRManager().GetClient(*channelFile);
     if (client)
@@ -864,7 +869,7 @@ void CGUIDialogPVRChannelManager::Renumber()
     pItem = m_channelItems->Get(iChannelPtr);
     if (pItem->GetProperty("ActiveChannel").asBoolean())
     {
-      strNumber = StringUtils::Format("%i", ++iNextChannelNumber);
+      strNumber = StringUtils::Format("{}", ++iNextChannelNumber);
       pItem->SetProperty("Number", strNumber);
     }
     else

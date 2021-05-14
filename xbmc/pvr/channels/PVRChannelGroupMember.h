@@ -9,6 +9,8 @@
 #pragma once
 
 #include "pvr/channels/PVRChannelNumber.h"
+#include "utils/ISerializable.h"
+#include "utils/ISortable.h"
 
 #include <memory>
 
@@ -17,7 +19,7 @@ namespace PVR
 
 class CPVRChannel;
 
-class CPVRChannelGroupMember
+class CPVRChannelGroupMember : public ISerializable, public ISortable
 {
   friend class CPVRDatabase;
 
@@ -25,21 +27,24 @@ public:
   CPVRChannelGroupMember() : m_bChanged(false) {}
 
   CPVRChannelGroupMember(const std::shared_ptr<CPVRChannel>& channel,
+                         const std::string& groupName,
                          const CPVRChannelNumber& channelNumber,
                          int iClientPriority,
                          int iOrder,
-                         const CPVRChannelNumber& clientChannelNumber)
-    : m_channel(channel),
-      m_channelNumber(channelNumber),
-      m_clientChannelNumber(clientChannelNumber),
-      m_iClientPriority(iClientPriority),
-      m_iOrder(iOrder)
-  {
-  }
+                         const CPVRChannelNumber& clientChannelNumber);
 
   virtual ~CPVRChannelGroupMember() = default;
 
+  // ISerializable implementation
+  void Serialize(CVariant& value) const override;
+
+  // ISortable implementation
+  void ToSortable(SortItem& sortable, Field field) const override;
+
   std::shared_ptr<CPVRChannel> Channel() const { return m_channel; }
+
+  const std::string& Path() const { return m_path; }
+  void SetGroupName(const std::string& groupName);
 
   const CPVRChannelNumber& ChannelNumber() const { return m_channelNumber; }
   void SetChannelNumber(const CPVRChannelNumber& channelNumber);
@@ -58,6 +63,7 @@ public:
 
 private:
   std::shared_ptr<CPVRChannel> m_channel;
+  std::string m_path;
   CPVRChannelNumber m_channelNumber; // the channel number this channel has in the group
   CPVRChannelNumber
       m_clientChannelNumber; // the client channel number this channel has in the group

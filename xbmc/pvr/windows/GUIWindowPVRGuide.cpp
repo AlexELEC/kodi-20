@@ -194,9 +194,11 @@ void CGUIWindowPVRGuideBase::UpdateSelectedItemPath()
   CGUIEPGGridContainer* epgGridContainer = GetGridControl();
   if (epgGridContainer)
   {
-    std::shared_ptr<CPVRChannel> channel(epgGridContainer->GetSelectedChannel());
-    if (channel)
-      CServiceBroker::GetPVRManager().GUIActions()->SetSelectedItemPath(m_bRadio, channel->Path());
+    const std::shared_ptr<CPVRChannelGroupMember> groupMember =
+        epgGridContainer->GetSelectedChannelGroupMember();
+    if (groupMember)
+      CServiceBroker::GetPVRManager().GUIActions()->SetSelectedItemPath(m_bRadio,
+                                                                        groupMember->Path());
   }
 }
 
@@ -708,7 +710,7 @@ bool CGUIWindowPVRGuideBase::RefreshTimelineItems()
 
       for (const auto& groupMember : groupMembers)
       {
-        channels->Add(std::make_shared<CFileItem>(groupMember->Channel()));
+        channels->Add(std::make_shared<CFileItem>(groupMember));
       }
 
       if (m_guiState)

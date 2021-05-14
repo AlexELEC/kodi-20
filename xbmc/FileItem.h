@@ -47,6 +47,7 @@ namespace GAME
 namespace PVR
 {
 class CPVRChannel;
+class CPVRChannelGroupMember;
 class CPVREpgInfoTag;
 class CPVRRecording;
 class CPVRTimerInfoTag;
@@ -111,7 +112,9 @@ public:
   explicit CFileItem(const MUSIC_INFO::CMusicInfoTag& music);
   explicit CFileItem(const CVideoInfoTag& movie);
   explicit CFileItem(const std::shared_ptr<PVR::CPVREpgInfoTag>& tag);
-  explicit CFileItem(const std::shared_ptr<PVR::CPVRChannel>& channel);
+  CFileItem(const std::shared_ptr<PVR::CPVREpgInfoTag>& tag,
+            const std::shared_ptr<PVR::CPVRChannelGroupMember>& groupMember);
+  explicit CFileItem(const std::shared_ptr<PVR::CPVRChannelGroupMember>& channelGroupMember);
   explicit CFileItem(const std::shared_ptr<PVR::CPVRRecording>& record);
   explicit CFileItem(const std::shared_ptr<PVR::CPVRTimerInfoTag>& timer);
   explicit CFileItem(const CMediaSource& share);
@@ -290,15 +293,18 @@ public:
     return m_epgInfoTag;
   }
 
-  inline bool HasPVRChannelInfoTag() const
+  inline bool HasPVRChannelGroupMemberInfoTag() const
   {
-    return m_pvrChannelInfoTag.get() != NULL;
+    return m_pvrChannelGroupMemberInfoTag.get() != nullptr;
   }
 
-  inline const std::shared_ptr<PVR::CPVRChannel> GetPVRChannelInfoTag() const
+  inline const std::shared_ptr<PVR::CPVRChannelGroupMember> GetPVRChannelGroupMemberInfoTag() const
   {
-    return m_pvrChannelInfoTag;
+    return m_pvrChannelGroupMemberInfoTag;
   }
+
+  bool HasPVRChannelInfoTag() const;
+  const std::shared_ptr<PVR::CPVRChannel> GetPVRChannelInfoTag() const;
 
   inline bool HasPVRRecordingInfoTag() const
   {
@@ -578,7 +584,8 @@ private:
   /*!
    \brief If given channel is radio, fill item's music tag from given epg tag and channel info.
    */
-  void FillMusicInfoTag(const std::shared_ptr<PVR::CPVRChannel>& channel, const std::shared_ptr<PVR::CPVREpgInfoTag>& tag);
+  void FillMusicInfoTag(const std::shared_ptr<PVR::CPVRChannelGroupMember>& groupMember,
+                        const std::shared_ptr<PVR::CPVREpgInfoTag>& tag);
 
   std::string m_strPath;            ///< complete path to item
   std::string m_strDynPath;
@@ -593,9 +600,9 @@ private:
   MUSIC_INFO::CMusicInfoTag* m_musicInfoTag;
   CVideoInfoTag* m_videoInfoTag;
   std::shared_ptr<PVR::CPVREpgInfoTag> m_epgInfoTag;
-  std::shared_ptr<PVR::CPVRChannel> m_pvrChannelInfoTag;
   std::shared_ptr<PVR::CPVRRecording> m_pvrRecordingInfoTag;
   std::shared_ptr<PVR::CPVRTimerInfoTag> m_pvrTimerInfoTag;
+  std::shared_ptr<PVR::CPVRChannelGroupMember> m_pvrChannelGroupMemberInfoTag;
   CPictureInfoTag* m_pictureInfoTag;
   std::shared_ptr<const ADDON::IAddon> m_addonInfo;
   KODI::GAME::CGameInfoTag* m_gameInfoTag;

@@ -455,7 +455,7 @@ void CGUIDialogPVRGroupManager::Update()
   if (m_selectedGroup)
   {
     /* set this group in the pvrmanager, so it becomes the selected group in other dialogs too */
-    CServiceBroker::GetPVRManager().PlaybackState()->SetPlayingGroup(m_selectedGroup);
+    CServiceBroker::GetPVRManager().PlaybackState()->SetActiveChannelGroup(m_selectedGroup);
     SET_CONTROL_LABEL(CONTROL_CURRENT_GROUP_LABEL, m_selectedGroup->GroupName());
     SET_CONTROL_SELECTED(GetID(), BUTTON_HIDE_GROUP, m_selectedGroup->IsHidden());
 
@@ -463,22 +463,23 @@ void CGUIDialogPVRGroupManager::Update()
 
     if (m_selectedGroup->IsInternalGroup())
     {
-      std::string strNewLabel = StringUtils::Format("%s %s",
-                                        g_localizeStrings.Get(19022).c_str(),
-                                        m_bIsRadio ? g_localizeStrings.Get(19024).c_str() : g_localizeStrings.Get(19023).c_str());
+      std::string strNewLabel = StringUtils::Format(
+          "{} {}", g_localizeStrings.Get(19022).c_str(),
+          m_bIsRadio ? g_localizeStrings.Get(19024).c_str() : g_localizeStrings.Get(19023).c_str());
       SET_CONTROL_LABEL(CONTROL_UNGROUPED_LABEL, strNewLabel);
 
-      strNewLabel = StringUtils::Format("%s %s",
-                                        g_localizeStrings.Get(19218).c_str(),
-                                        m_bIsRadio ? g_localizeStrings.Get(19024).c_str() : g_localizeStrings.Get(19023).c_str());
+      strNewLabel = StringUtils::Format("{} {}", g_localizeStrings.Get(19218).c_str(),
+                                        m_bIsRadio ? g_localizeStrings.Get(19024).c_str()
+                                                   : g_localizeStrings.Get(19023).c_str());
       SET_CONTROL_LABEL(CONTROL_IN_GROUP_LABEL, strNewLabel);
     }
     else
     {
-      std::string strNewLabel = StringUtils::Format("%s", g_localizeStrings.Get(19219).c_str());
+      std::string strNewLabel = StringUtils::Format("{}", g_localizeStrings.Get(19219).c_str());
       SET_CONTROL_LABEL(CONTROL_UNGROUPED_LABEL, strNewLabel);
 
-      strNewLabel = StringUtils::Format("%s %s", g_localizeStrings.Get(19220).c_str(), m_selectedGroup->GroupName().c_str());
+      strNewLabel = StringUtils::Format("{} {}", g_localizeStrings.Get(19220).c_str(),
+                                        m_selectedGroup->GroupName().c_str());
       SET_CONTROL_LABEL(CONTROL_IN_GROUP_LABEL, strNewLabel);
     }
 
@@ -490,9 +491,9 @@ void CGUIDialogPVRGroupManager::Update()
       for (const auto& groupMember : groupMembers)
       {
         if (groupMember->Channel()->IsHidden())
-          m_ungroupedChannels->Add(std::make_shared<CFileItem>(groupMember->Channel()));
+          m_ungroupedChannels->Add(std::make_shared<CFileItem>(groupMember));
         else
-          m_groupMembers->Add(std::make_shared<CFileItem>(groupMember->Channel()));
+          m_groupMembers->Add(std::make_shared<CFileItem>(groupMember));
       }
     }
     else
@@ -501,7 +502,7 @@ void CGUIDialogPVRGroupManager::Update()
           m_selectedGroup->GetMembers(CPVRChannelGroup::Include::ONLY_VISIBLE);
       for (const auto& groupMember : groupMembers)
       {
-        m_groupMembers->Add(std::make_shared<CFileItem>(groupMember->Channel()));
+        m_groupMembers->Add(std::make_shared<CFileItem>(groupMember));
       }
 
       /* for the center part, get all channels of the "all" channels group that are not in this group */
@@ -511,7 +512,7 @@ void CGUIDialogPVRGroupManager::Update()
       for (const auto& groupMember : allGroupMembers)
       {
         if (!m_selectedGroup->IsGroupMember(groupMember->Channel()))
-          m_ungroupedChannels->Add(std::make_shared<CFileItem>(groupMember->Channel()));
+          m_ungroupedChannels->Add(std::make_shared<CFileItem>(groupMember));
       }
     }
     m_viewGroupMembers.SetItems(*m_groupMembers);

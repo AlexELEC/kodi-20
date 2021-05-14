@@ -76,7 +76,7 @@ void CPVRChannelGroupInternal::UpdateChannelPaths()
     if (groupMemberPair.second->Channel()->IsHidden())
       ++m_iHiddenChannels;
     else
-      groupMemberPair.second->Channel()->UpdatePath(GroupName());
+      groupMemberPair.second->SetGroupName(GroupName());
   }
 }
 
@@ -86,17 +86,16 @@ std::shared_ptr<CPVRChannel> CPVRChannelGroupInternal::UpdateFromClient(
     int iOrder)
 {
   CSingleLock lock(m_critSection);
-  const std::shared_ptr<CPVRChannelGroupMember>& realMember = GetByUniqueID(channel->StorageId());
-  if (realMember->Channel())
+  const std::shared_ptr<CPVRChannelGroupMember> realMember = GetByUniqueID(channel->StorageId());
+  if (realMember)
   {
     realMember->Channel()->UpdateFromClient(channel);
     return realMember->Channel();
   }
   else
   {
-    channel->UpdatePath(GroupName());
-    auto newMember = std::make_shared<CPVRChannelGroupMember>(channel, CPVRChannelNumber(), 0,
-                                                              iOrder, clientChannelNumber);
+    const auto newMember = std::make_shared<CPVRChannelGroupMember>(
+        channel, GroupName(), CPVRChannelNumber(), 0, iOrder, clientChannelNumber);
     m_sortedMembers.emplace_back(newMember);
     m_members.insert(std::make_pair(channel->StorageId(), newMember));
 
@@ -120,8 +119,8 @@ bool CPVRChannelGroupInternal::AddToGroup(const std::shared_ptr<CPVRChannel>& ch
   CSingleLock lock(m_critSection);
 
   /* get the group member, because we need the channel ID in this group, and the channel from this group */
-  std::shared_ptr<CPVRChannelGroupMember>& groupMember = GetByUniqueID(channel->StorageId());
-  if (!groupMember->Channel())
+  const std::shared_ptr<CPVRChannelGroupMember> groupMember = GetByUniqueID(channel->StorageId());
+  if (!groupMember)
     return bReturn;
 
   bool bSort = false;
@@ -234,9 +233,10 @@ bool CPVRChannelGroupInternal::AddAndUpdateChannels(const CPVRChannelGroup& chan
   for (auto& newMemberPair : channels.m_members)
   {
     /* check whether this channel is present in this container */
-    std::shared_ptr<CPVRChannelGroupMember>& existingMember = GetByUniqueID(newMemberPair.first);
-    const std::shared_ptr<CPVRChannelGroupMember>& newMember = newMemberPair.second;
-    if (existingMember->Channel())
+    const std::shared_ptr<CPVRChannelGroupMember> existingMember =
+        GetByUniqueID(newMemberPair.first);
+    const std::shared_ptr<CPVRChannelGroupMember> newMember = newMemberPair.second;
+    if (existingMember)
     {
       /* if it's present, update the current tag */
       if (existingMember->Channel()->UpdateFromClient(newMember->Channel()))
