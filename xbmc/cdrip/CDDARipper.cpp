@@ -181,7 +181,7 @@ bool CCDDARipper::CreateAlbumDir(const MUSIC_INFO::CMusicInfoTag& infoTag, std::
   // Create directory if it doesn't exist
   if (!CUtil::CreateDirectoryEx(strDirectory))
   {
-    CLog::Log(LOGERROR, "Unable to create directory '%s'", strDirectory.c_str());
+    CLog::Log(LOGERROR, "Unable to create directory '{}'", strDirectory);
     return false;
   }
 
@@ -220,8 +220,8 @@ std::string CCDDARipper::GetAlbumDirName(const MUSIC_INFO::CMusicInfoTag& infoTa
   {
     std::string strAlbum = infoTag.GetAlbum();
     if (strAlbum.empty())
-      strAlbum = StringUtils::Format(
-          "Unknown Album {}", CDateTime::GetCurrentDateTime().GetAsLocalizedDateTime().c_str());
+      strAlbum = StringUtils::Format("Unknown Album {}",
+                                     CDateTime::GetCurrentDateTime().GetAsLocalizedDateTime());
     else
       StringUtils::Replace(strAlbum, '/', '_');
     StringUtils::Replace(strAlbumDir, "%B", strAlbum);

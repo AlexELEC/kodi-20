@@ -156,7 +156,7 @@ bool CPlayerGUIInfo::InitCurrentItem(CFileItem *item)
 {
   if (item && g_application.GetAppPlayer().IsPlaying())
   {
-    CLog::Log(LOGDEBUG, "CPlayerGUIInfo::InitCurrentItem(%s)", CURL::GetRedacted(item->GetPath()).c_str());
+    CLog::Log(LOGDEBUG, "CPlayerGUIInfo::InitCurrentItem({})", CURL::GetRedacted(item->GetPath()));
     m_currentItem.reset(new CFileItem(*item));
   }
   else
@@ -259,9 +259,9 @@ bool CPlayerGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
     {
       float speed = g_application.GetAppPlayer().GetPlaySpeed();
       if (speed != 1.0f)
-        value = StringUtils::Format(
-            "{} ({}x)", GetCurrentPlayTime(static_cast<TIME_FORMAT>(info.GetData1())).c_str(),
-            static_cast<int>(speed));
+        value = StringUtils::Format("{} ({}x)",
+                                    GetCurrentPlayTime(static_cast<TIME_FORMAT>(info.GetData1())),
+                                    static_cast<int>(speed));
       else
         value = GetCurrentPlayTime(TIME_FORMAT_GUESS);
       return true;
@@ -287,7 +287,7 @@ bool CPlayerGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       int iLevel = g_application.GetAppPlayer().GetCacheLevel();
       if (iLevel >= 0)
       {
-        value = StringUtils::Format("{}", iLevel);
+        value = std::to_string(iLevel);
         return true;
       }
       break;
@@ -625,7 +625,7 @@ std::string CPlayerGUIInfo::GetContentRanges(int iInfo) const
         ranges = GetChapters(data, duration);
         break;
       default:
-        CLog::Log(LOGERROR, "CPlayerGUIInfo::GetContentRanges(%i) - unhandled guiinfo", iInfo);
+        CLog::Log(LOGERROR, "CPlayerGUIInfo::GetContentRanges({}) - unhandled guiinfo", iInfo);
         break;
     }
 

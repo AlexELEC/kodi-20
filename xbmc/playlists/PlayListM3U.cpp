@@ -214,7 +214,7 @@ void CPlayListM3U::Save(const std::string& strFileName) const
   CFile file;
   if (!file.OpenForWrite(strPlaylist,true))
   {
-    CLog::Log(LOGERROR, "Could not save M3U playlist: [%s]", strPlaylist.c_str());
+    CLog::Log(LOGERROR, "Could not save M3U playlist: [{}]", strPlaylist);
     return;
   }
   std::string strLine = StringUtils::Format("{}\n", StartMarker);
@@ -226,9 +226,8 @@ void CPlayListM3U::Save(const std::string& strFileName) const
     CFileItemPtr item = m_vecItems[i];
     std::string strDescription=item->GetLabel();
     g_charsetConverter.utf8ToStringCharset(strDescription);
-    strLine =
-        StringUtils::Format("{}:{},{}\n", InfoMarker, item->GetMusicInfoTag()->GetDuration() / 1000,
-                            strDescription.c_str());
+    strLine = StringUtils::Format("{}:{},{}\n", InfoMarker,
+                                  item->GetMusicInfoTag()->GetDuration() / 1000, strDescription);
     if (file.Write(strLine.c_str(), strLine.size()) != static_cast<ssize_t>(strLine.size()))
       return; // error
     if (item->m_lStartOffset != 0 || item->m_lEndOffset != 0)
@@ -239,7 +238,7 @@ void CPlayListM3U::Save(const std::string& strFileName) const
     }
     std::string strFileName = ResolveURL(item);
     g_charsetConverter.utf8ToStringCharset(strFileName);
-    strLine = StringUtils::Format("{}\n", strFileName.c_str());
+    strLine = StringUtils::Format("{}\n", strFileName);
     if (file.Write(strLine.c_str(), strLine.size()) != static_cast<ssize_t>(strLine.size()))
       return; // error
   }

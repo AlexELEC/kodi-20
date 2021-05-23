@@ -24,6 +24,15 @@
 #include "platform/win32/CharsetConverter.h"
 #include "platform/win32/WIN32Util.h"
 
+#ifdef TARGET_WINDOWS_STORE
+#include <winrt/Windows.Graphics.Display.Core.h>
+
+extern "C"
+{
+#include <libavutil/rational.h>
+}
+#endif
+
 #ifdef _DEBUG
 #include <dxgidebug.h>
 #pragma comment(lib, "dxgi.lib")
@@ -42,7 +51,9 @@ namespace winrt
 #else
 #define breakOnDebug
 #endif
-#define LOG_HR(hr) CLog::LogF(LOGERROR, "function call at line %d ends with error: %s", __LINE__, DX::GetErrorDescription(hr).c_str());
+#define LOG_HR(hr) \
+  CLog::LogF(LOGERROR, "function call at line {} ends with error: {}", __LINE__, \
+             DX::GetErrorDescription(hr));
 #define CHECK_ERR() if (FAILED(hr)) { LOG_HR(hr); breakOnDebug; return; }
 #define RETURN_ERR(ret) if (FAILED(hr)) { LOG_HR(hr); breakOnDebug; return (##ret); }
 
@@ -94,14 +105,8 @@ void DX::DeviceResources::Release()
 
   ReleaseBackBuffer();
   OnDeviceLost(true);
+  DestroySwapChain();
 
-  // leave fullscreen before destroying
-  BOOL bFullScreen;
-  m_swapChain->GetFullscreenState(&bFullScreen, nullptr);
-  if (!!bFullScreen)
-    m_swapChain->SetFullscreenState(false, nullptr);
-
-  m_swapChain = nullptr;
   m_adapter = nullptr;
   m_dxgiFactory = nullptr;
   m_output = nullptr;
@@ -170,6 +175,17 @@ void DX::DeviceResources::GetDisplayMode(DXGI_MODE_DESC* mode) const
     else
       mode->ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE;
   }
+#else
+  using namespace winrt::Windows::Graphics::Display::Core;
+
+  auto hdmiInfo = HdmiDisplayInformation::GetForCurrentView();
+  if (hdmiInfo) // Xbox only
+  {
+    auto currentMode = hdmiInfo.GetCurrentDisplayMode();
+    AVRational refresh = av_d2q(currentMode.RefreshRate(), 60000);
+    mode->RefreshRate.Numerator = refresh.num;
+    mode->RefreshRate.Denominator = refresh.den;
+  }
 #endif
 }
 
@@ -191,7 +207,7 @@ void DX::DeviceResources::SetViewPort(D3D11_VIEWPORT& viewPort) const
 
 bool DX::DeviceResources::SetFullScreen(bool fullscreen, RESOLUTION_INFO& res)
 {
-  if (!m_bDeviceCreated)
+  if (!m_bDeviceCreated || !m_swapChain)
     return false;
 
   critical_section::scoped_lock lock(m_criticalSection);
@@ -199,9 +215,9 @@ bool DX::DeviceResources::SetFullScreen(bool fullscreen, RESOLUTION_INFO& res)
   BOOL bFullScreen;
   m_swapChain->GetFullscreenState(&bFullScreen, nullptr);
 
-  CLog::LogF(LOGDEBUG, "switching from %s(%.0f x %.0f) to %s(%d x %d)",
+  CLog::LogF(LOGDEBUG, "switching from {}({:.0f} x {:.0f}) to {}({} x {})",
              bFullScreen ? "fullscreen " : "", m_outputSize.Width, m_outputSize.Height,
-             fullscreen  ? "fullscreen " : "", res.iWidth, res.iHeight);
+             fullscreen ? "fullscreen " : "", res.iWidth, res.iHeight);
 
   bool recreate = m_stereoEnabled != (CServiceBroker::GetWinSystem()->GetGfxContext().GetStereoMode() == RENDER_STEREO_MODE_HARDWAREBASED);
   if (!!bFullScreen && !fullscreen)
@@ -232,7 +248,8 @@ bool DX::DeviceResources::SetFullScreen(bool fullscreen, RESOLUTION_INFO& res)
         // some drivers unable to create stereo swapchain if mode does not match @23.976
         || CServiceBroker::GetWinSystem()->GetGfxContext().GetStereoMode() == RENDER_STEREO_MODE_HARDWAREBASED)
       {
-        CLog::Log(LOGDEBUG, __FUNCTION__": changing display mode to %dx%d@%0.3f", res.iWidth, res.iHeight, res.fRefreshRate,
+        CLog::Log(LOGDEBUG, __FUNCTION__ ": changing display mode to {}x{}@{:0.3f}", res.iWidth,
+                  res.iHeight, res.fRefreshRate,
                   res.dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "");
 
         int refresh = static_cast<int>(res.fRefreshRate);
@@ -515,6 +532,21 @@ HRESULT DX::DeviceResources::CreateSwapChain(DXGI_SWAP_CHAIN_DESC1& desc, DXGI_S
   return hr;
 }
 
+void DX::DeviceResources::DestroySwapChain()
+{
+  if (!m_swapChain)
+    return;
+
+  BOOL bFullcreen = 0;
+  m_swapChain->GetFullscreenState(&bFullcreen, nullptr);
+  if (!!bFullcreen)
+    m_swapChain->SetFullscreenState(false, nullptr); // mandatory before releasing swapchain
+  m_swapChain = nullptr;
+  m_deferrContext->Flush();
+  m_d3dContext->Flush();
+  m_IsTransferPQ = false;
+}
+
 void DX::DeviceResources::ResizeBuffers()
 {
   if (!m_bDeviceCreated)
@@ -533,24 +565,11 @@ void DX::DeviceResources::ResizeBuffers()
     BOOL bFullcreen = 0;
     m_swapChain->GetFullscreenState(&bFullcreen, nullptr);
     if (!!bFullcreen)
-    {
       windowed = false;
-    }
 
-    // check if swapchain needs to be recreated
     m_swapChain->GetDesc1(&scDesc);
-
-    if ((scDesc.Stereo == TRUE) != bHWStereoEnabled)
-    {
-      // check fullscreen state and go to windowing if necessary
-      if (!!bFullcreen)
-      {
-        m_swapChain->SetFullscreenState(false, nullptr); // mandatory before releasing swapchain
-      }
-      m_swapChain = nullptr;
-      m_deferrContext->Flush();
-      m_d3dContext->Flush();
-    }
+    if ((scDesc.Stereo == TRUE) != bHWStereoEnabled) // check if swapchain needs to be recreated
+      DestroySwapChain();
   }
 
   if (m_swapChain) // If the swap chain already exists, resize it.
@@ -742,11 +761,11 @@ void DX::DeviceResources::SetLogicalSize(float width, float height)
 #endif
     return;
 
-  CLog::LogF(LOGDEBUG, "receive changing logical size to %f x %f", width, height);
+  CLog::LogF(LOGDEBUG, "receive changing logical size to {:f} x {:f}", width, height);
 
   if (m_logicalSize.Width != width || m_logicalSize.Height != height)
   {
-    CLog::LogF(LOGDEBUG, "change logical size to %f x %f", width, height);
+    CLog::LogF(LOGDEBUG, "change logical size to {:f} x {:f}", width, height);
 
     m_logicalSize = winrt::Size(width, height);
 
@@ -1120,7 +1139,7 @@ void DX::DeviceResources::SetHdrMetaData(DXGI_HDR_METADATA_HDR10& hdr10) const
 {
   ComPtr<IDXGISwapChain4> swapChain4;
 
-  if (m_swapChain == nullptr)
+  if (!m_swapChain)
     return;
 
   if (SUCCEEDED(m_swapChain.As(&swapChain4)))
@@ -1166,7 +1185,7 @@ void DX::DeviceResources::SetHdrColorSpace(const DXGI_COLOR_SPACE_TYPE colorSpac
 {
   ComPtr<IDXGISwapChain3> swapChain3;
 
-  if (m_swapChain == nullptr)
+  if (!m_swapChain)
     return;
 
   if (SUCCEEDED(m_swapChain.As(&swapChain3)))
@@ -1200,14 +1219,7 @@ HDR_STATUS DX::DeviceResources::ToggleHDR()
   if (m_swapChain && hdrStatus != HDR_STATUS::HDR_TOGGLE_FAILED)
   {
     CLog::LogF(LOGDEBUG, "Re-create swapchain due HDR <-> SDR switch");
-    BOOL bFullcreen = 0;
-    m_swapChain->GetFullscreenState(&bFullcreen, nullptr);
-    if (!!bFullcreen)
-      m_swapChain->SetFullscreenState(false, nullptr);
-    m_swapChain = nullptr;
-    m_deferrContext->Flush();
-    m_d3dContext->Flush();
-    m_IsTransferPQ = false;
+    DestroySwapChain();
   }
 
   DX::Windowing()->SetAlteringWindow(false);
@@ -1225,7 +1237,7 @@ HDR_STATUS DX::DeviceResources::ToggleHDR()
 
 DEBUG_INFO_RENDER DX::DeviceResources::GetDebugInfo() const
 {
-  if (m_swapChain == nullptr)
+  if (!m_swapChain)
     return {};
 
   DXGI_SWAP_CHAIN_DESC1 desc = {};

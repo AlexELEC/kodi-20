@@ -36,13 +36,13 @@ using namespace KODI::MESSAGING;
 using KODI::UTILITY::CDigest;
 
 CGUIDialogNumeric::CGUIDialogNumeric(void)
-  : CGUIDialog(WINDOW_DIALOG_NUMERIC, "DialogNumeric.xml")
-  , m_bConfirmed{false}
-  , m_bCanceled{false}
-  , m_mode{INPUT_PASSWORD}
-  , m_block{0}
-  , m_lastblock{0}
-  , m_dirty{false}
+  : CGUIDialog(WINDOW_DIALOG_NUMERIC, "DialogNumeric.xml"),
+    m_bConfirmed{false},
+    m_bCanceled{false},
+    m_mode{INPUT_PASSWORD},
+    m_block{},
+    m_lastblock{},
+    m_dirty{false}
 {
   memset(&m_datetime, 0, sizeof(KODI::TIME::SystemTime));
   m_loadType = KEEP_IN_MEMORY;
@@ -480,7 +480,7 @@ bool CGUIDialogNumeric::ShowAndGetSeconds(std::string &timeString, const std::st
   CGUIDialogNumeric *pDialog = CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogNumeric>(WINDOW_DIALOG_NUMERIC);
   if (!pDialog) return false;
   int seconds = StringUtils::TimeStringToSeconds(timeString);
-  KODI::TIME::SystemTime time = {0};
+  KODI::TIME::SystemTime time = {};
   time.hour = seconds / 3600;
   time.minute = (seconds - time.hour * 3600) / 60;
   time.second = seconds - time.hour * 3600 - time.minute * 60;
@@ -605,9 +605,8 @@ int CGUIDialogNumeric::ShowAndVerifyPassword(std::string& strPassword, const std
   if (iRetries > 0)
   {
     // Show a string telling user they have iRetries retries left
-    strTempHeading = StringUtils::Format("{}. {} {} {}", strHeading.c_str(),
-                                         g_localizeStrings.Get(12342).c_str(), iRetries,
-                                         g_localizeStrings.Get(12343).c_str());
+    strTempHeading = StringUtils::Format("{}. {} {} {}", strHeading, g_localizeStrings.Get(12342),
+                                         iRetries, g_localizeStrings.Get(12343));
   }
 
   // make a copy of strPassword to prevent from overwriting it later

@@ -125,7 +125,7 @@ bool CFileOperationJob::DoProcessFolder(FileAction action, const std::string& st
 
   if (!DoProcess(action, items, strDestFile, fileOperations, totalTime))
   {
-    CLog::Log(LOGERROR,"FileManager: error while processing folder: %s", strPath.c_str());
+    CLog::Log(LOGERROR, "FileManager: error while processing folder: {}", strPath);
     return false;
   }
 
@@ -321,8 +321,8 @@ bool CFileOperationJob::CFileOperation::OnFileCallback(void* pContext, int iperc
     data->base->m_avgSpeed = StringUtils::Format("{:.1f} KB/s", avgSpeed / 1000.0f);
 
   std::string line;
-  line = StringUtils::Format("{} ({})", data->base->GetCurrentFile().c_str(),
-                             data->base->GetAverageSpeed().c_str());
+  line =
+      StringUtils::Format("{} ({})", data->base->GetCurrentFile(), data->base->GetAverageSpeed());
   data->base->SetText(line);
   return !data->base->ShouldCancel((unsigned)current, 100);
 }

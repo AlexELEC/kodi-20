@@ -251,7 +251,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const std::string& strDrive, int& nAdde
             items.Sort(SortByLabel, SortOrderDescending);
             phddvdItem = pItem;
             hddvdname = URIUtils::GetFileName(items[0]->GetPath());
-            CLog::Log(LOGINFO,"HD DVD: %s", items[0]->GetPath().c_str());
+            CLog::Log(LOGINFO, "HD DVD: {}", items[0]->GetPath());
           }
         }
 
@@ -271,7 +271,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const std::string& strDrive, int& nAdde
               items.Sort(SortByLabel, SortOrderAscending);
               phddvdItem = pItem;
               hddvdname = URIUtils::GetFileName(items[0]->GetPath());
-              CLog::Log(LOGINFO,"HD DVD: %s",items[0]->GetPath().c_str());
+              CLog::Log(LOGINFO, "HD DVD: {}", items[0]->GetPath());
             }
           }
           // Find and sort *.evo files for internal playback.
@@ -325,7 +325,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const std::string& strDrive, int& nAdde
             // If no matching rule was found, VideoPlayer will be default player.
             if (hdVideoPlayer != "VideoPlayer")
             {
-              CLog::Log(LOGINFO,"HD DVD: External singlefile playback initiated: %s",hddvdname.c_str());
+              CLog::Log(LOGINFO, "HD DVD: External singlefile playback initiated: {}", hddvdname);
               g_application.PlayFile(item, hdVideoPlayer, false);
               return true;
             } else
@@ -370,7 +370,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const std::string& strDrive, int& nAdde
               && (bypassSettings))
         {
           bPlaying = true;
-          std::string strExec = StringUtils::Format("RecursiveSlideShow({})", pItem->GetPath().c_str());
+          std::string strExec = StringUtils::Format("RecursiveSlideShow({})", pItem->GetPath());
           CBuiltins::Execute(strExec);
           return true;
         }
@@ -446,7 +446,7 @@ bool CAutorun::RunDisc(IDirectory* pDir, const std::string& strDrive, int& nAdde
       if (!pItem->m_bIsFolder && pItem->IsPicture())
       {
         bPlaying = true;
-        std::string strExec = StringUtils::Format("RecursiveSlideShow({})", strDrive.c_str());
+        std::string strExec = StringUtils::Format("RecursiveSlideShow({})", strDrive);
         CBuiltins::Execute(strExec);
         break;
       }

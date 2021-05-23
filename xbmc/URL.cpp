@@ -283,7 +283,7 @@ void CURL::Parse(const std::string& strURL1)
   {
     if (m_strHostName != "" && m_strFileName != "")
     {
-      m_strFileName = StringUtils::Format("{}/{}", m_strHostName.c_str(), m_strFileName.c_str());
+      m_strFileName = StringUtils::Format("{}/{}", m_strHostName, m_strFileName);
       m_strHostName = "";
     }
     else
@@ -354,7 +354,7 @@ void CURL::SetOptions(const std::string& strOptions)
       m_options.AddOptions(m_strOptions);
     }
     else
-      CLog::Log(LOGWARNING, "%s - Invalid options specified for url %s", __FUNCTION__, strOptions.c_str());
+      CLog::Log(LOGWARNING, "{} - Invalid options specified for url {}", __FUNCTION__, strOptions);
   }
 }
 

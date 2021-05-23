@@ -336,24 +336,58 @@ wchar_t toupperUnicode(const wchar_t& c)
   return c;
 }
 
+template<typename Str, typename Fn>
+void transformString(const Str& input, Str& output, Fn fn)
+{
+  std::transform(input.begin(), input.end(), output.begin(), fn);
+}
+
+std::string StringUtils::ToUpper(const std::string& str)
+{
+  std::string result(str.size(), '\0');
+  transformString(str, result, ::toupper);
+  return result;
+}
+
+std::wstring StringUtils::ToUpper(const std::wstring& str)
+{
+  std::wstring result(str.size(), '\0');
+  transformString(str, result, toupperUnicode);
+  return result;
+}
+
 void StringUtils::ToUpper(std::string &str)
 {
-  std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+  transformString(str, str, ::toupper);
 }
 
 void StringUtils::ToUpper(std::wstring &str)
 {
-  transform(str.begin(), str.end(), str.begin(), toupperUnicode);
+  transformString(str, str, toupperUnicode);
+}
+
+std::string StringUtils::ToLower(const std::string& str)
+{
+  std::string result(str.size(), '\0');
+  transformString(str, result, ::tolower);
+  return result;
+}
+
+std::wstring StringUtils::ToLower(const std::wstring& str)
+{
+  std::wstring result(str.size(), '\0');
+  transformString(str, result, tolowerUnicode);
+  return result;
 }
 
 void StringUtils::ToLower(std::string &str)
 {
-  transform(str.begin(), str.end(), str.begin(), ::tolower);
+  transformString(str, str, ::tolower);
 }
 
 void StringUtils::ToLower(std::wstring &str)
 {
-  transform(str.begin(), str.end(), str.begin(), tolowerUnicode);
+  transformString(str, str, tolowerUnicode);
 }
 
 void StringUtils::ToCapitalize(std::string &str)
@@ -1393,13 +1427,13 @@ std::string StringUtils::SecondsToTimeString(long lSeconds, TIME_FORMAT format)
 
   std::string strHMS;
   if (format == TIME_FORMAT_SECS)
-    strHMS = StringUtils::Format("{}", lSeconds);
+    strHMS = std::to_string(lSeconds);
   else if (format == TIME_FORMAT_MINS)
-    strHMS = StringUtils::Format("{}", lrintf(static_cast<float>(lSeconds) / 60.0f));
+    strHMS = std::to_string(lrintf(static_cast<float>(lSeconds) / 60.0f));
   else if (format == TIME_FORMAT_HOURS)
-    strHMS = StringUtils::Format("{}", lrintf(static_cast<float>(lSeconds) / 3600.0f));
+    strHMS = std::to_string(lrintf(static_cast<float>(lSeconds) / 3600.0f));
   else if (format & TIME_FORMAT_M)
-    strHMS += StringUtils::Format("{}", lSeconds % 3600 / 60);
+    strHMS += std::to_string(lSeconds % 3600 / 60);
   else
   {
     int hh = lSeconds / 3600;
@@ -1412,7 +1446,7 @@ std::string StringUtils::SecondsToTimeString(long lSeconds, TIME_FORMAT format)
     if (format & TIME_FORMAT_HH)
       strHMS += StringUtils::Format("{:02}", hh);
     else if (format & TIME_FORMAT_H)
-      strHMS += StringUtils::Format("{}", hh);
+      strHMS += std::to_string(hh);
     if (format & TIME_FORMAT_MM)
       strHMS += StringUtils::Format(strHMS.empty() ? "{:02}" : ":{:02}", mm);
     if (format & TIME_FORMAT_SS)
@@ -1792,7 +1826,7 @@ std::string StringUtils::FormatFileSize(uint64_t bytes)
 {
   const std::array<std::string, 6> units{{"B", "kB", "MB", "GB", "TB", "PB"}};
   if (bytes < 1000)
-    return Format("%" PRIu64 "B", bytes);
+    return Format("{}B", bytes);
 
   size_t i = 0;
   double value = static_cast<double>(bytes);
@@ -1802,8 +1836,7 @@ std::string StringUtils::FormatFileSize(uint64_t bytes)
     value /= 1024.0;
   }
   unsigned int decimals = value < 9.995 ? 2 : (value < 99.95 ? 1 : 0);
-  auto frmt = "%." + Format("%u", decimals) + "f%s";
-  return Format(frmt.c_str(), value, units[i].c_str());
+  return Format("{:.{}f}{}", value, decimals, units[i]);
 }
 
 const std::locale& StringUtils::GetOriginalLocale() noexcept

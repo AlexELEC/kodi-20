@@ -66,7 +66,7 @@ bool CXRandR::Query(bool force, int screennum, bool ignoreoff)
   {
     cmd  = getenv("KODI_BIN_HOME");
     cmd += "/" + appname + "-xrandr";
-    cmd = StringUtils::Format("{} -q --screen {}", cmd.c_str(), screennum);
+    cmd = StringUtils::Format("{} -q --screen {}", cmd, screennum);
   }
 
   FILE* file = popen(cmd.c_str(),"r");
@@ -137,7 +137,8 @@ bool CXRandR::Query(bool force, int screennum, bool ignoreoff)
     if (hascurrent || !ignoreoff)
       m_outputs.push_back(xoutput);
     else
-      CLog::Log(LOGWARNING, "CXRandR::Query - output %s has no current mode, assuming disconnected", xoutput.name.c_str());
+      CLog::Log(LOGWARNING, "CXRandR::Query - output {} has no current mode, assuming disconnected",
+                xoutput.name);
   }
   return m_outputs.size() > 0;
 }
@@ -156,8 +157,7 @@ bool CXRandR::TurnOffOutput(const std::string& name)
   {
     cmd  = getenv("KODI_BIN_HOME");
     cmd += "/" + appname + "-xrandr";
-    cmd = StringUtils::Format("{} --screen {} --output {} --off", cmd.c_str(), output->screen,
-                              name.c_str());
+    cmd = StringUtils::Format("{} --screen {} --output {} --off", cmd, output->screen, name);
   }
 
   int status = system(cmd.c_str());
@@ -250,7 +250,9 @@ bool CXRandR::SetMode(const XOutput& output, const XMode& mode)
 
   if (!isOutputFound)
   {
-    CLog::Log(LOGERROR, "CXRandR::SetMode: asked to change resolution for non existing output: %s mode: %s", output.name.c_str(), mode.id.c_str());
+    CLog::Log(LOGERROR,
+              "CXRandR::SetMode: asked to change resolution for non existing output: {} mode: {}",
+              output.name, mode.id);
     return false;
   }
 
@@ -270,7 +272,10 @@ bool CXRandR::SetMode(const XOutput& output, const XMode& mode)
       }
       else
       {
-        CLog::Log(LOGERROR, "CXRandR::SetMode: asked to change resolution for mode that exists but with different w/h/hz: %s mode: %s. Searching for similar modes...", output.name.c_str(), mode.id.c_str());
+        CLog::Log(LOGERROR,
+                  "CXRandR::SetMode: asked to change resolution for mode that exists but with "
+                  "different w/h/hz: {} mode: {}. Searching for similar modes...",
+                  output.name, mode.id);
         break;
       }
     }
@@ -286,7 +291,8 @@ bool CXRandR::SetMode(const XOutput& output, const XMode& mode)
       {
         isModeFound = true;
         modeFound = outputFound.modes[i];
-        CLog::Log(LOGWARNING, "CXRandR::SetMode: found alternative mode (same hz): %s mode: %s.", output.name.c_str(), outputFound.modes[i].id.c_str());
+        CLog::Log(LOGWARNING, "CXRandR::SetMode: found alternative mode (same hz): {} mode: {}.",
+                  output.name, outputFound.modes[i].id);
       }
     }
   }
@@ -300,7 +306,9 @@ bool CXRandR::SetMode(const XOutput& output, const XMode& mode)
       {
         isModeFound = true;
         modeFound = outputFound.modes[i];
-        CLog::Log(LOGWARNING, "CXRandR::SetMode: found alternative mode (different hz): %s mode: %s.", output.name.c_str(), outputFound.modes[i].id.c_str());
+        CLog::Log(LOGWARNING,
+                  "CXRandR::SetMode: found alternative mode (different hz): {} mode: {}.",
+                  output.name, outputFound.modes[i].id);
       }
     }
   }
@@ -308,7 +316,9 @@ bool CXRandR::SetMode(const XOutput& output, const XMode& mode)
   // Let's try finding a mode that is the same
   if (!isModeFound)
   {
-    CLog::Log(LOGERROR, "CXRandR::SetMode: asked to change resolution for non existing mode: %s mode: %s", output.name.c_str(), mode.id.c_str());
+    CLog::Log(LOGERROR,
+              "CXRandR::SetMode: asked to change resolution for non existing mode: {} mode: {}",
+              output.name, mode.id);
     return false;
   }
 
@@ -324,7 +334,7 @@ bool CXRandR::SetMode(const XOutput& output, const XMode& mode)
                outputFound.screen, outputFound.name.c_str(), modeFound.id.c_str());
   else
     return false;
-  CLog::Log(LOGINFO, "XRANDR: %s", cmd);
+  CLog::Log(LOGINFO, "XRANDR: {}", cmd);
   int status = system(cmd);
   if (status == -1)
     return false;
@@ -416,7 +426,7 @@ void CXRandR::LoadCustomModeLinesToAllOutputs(void)
       snprintf(cmd, sizeof(cmd), "%s/%s-xrandr --newmode \"%s\" %s > /dev/null 2>&1", getenv("KODI_BIN_HOME"),
                appname.c_str(), name.c_str(), strModeLine.c_str());
       if (system(cmd) != 0)
-        CLog::Log(LOGERROR, "Unable to create modeline \"%s\"", name.c_str());
+        CLog::Log(LOGERROR, "Unable to create modeline \"{}\"", name);
     }
 
     for (unsigned int i = 0; i < m_outputs.size(); i++)
@@ -426,7 +436,7 @@ void CXRandR::LoadCustomModeLinesToAllOutputs(void)
         snprintf(cmd, sizeof(cmd), "%s/%s-xrandr --addmode %s \"%s\"  > /dev/null 2>&1", getenv("KODI_BIN_HOME"),
                  appname.c_str(), m_outputs[i].name.c_str(), name.c_str());
         if (system(cmd) != 0)
-          CLog::Log(LOGERROR, "Unable to add modeline \"%s\"", name.c_str());
+          CLog::Log(LOGERROR, "Unable to add modeline \"{}\"", name);
       }
     }
   }

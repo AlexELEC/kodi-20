@@ -22,7 +22,7 @@ CPeripheralBusUSB::CPeripheralBusUSB(CPeripherals& manager) :
   usb_init();
   usb_find_busses();
   m_busses = usb_get_busses();
-  CLog::Log(LOGDEBUG, "%s - using libusb peripheral scanning", __FUNCTION__);
+  CLog::Log(LOGDEBUG, "{} - using libusb peripheral scanning", __FUNCTION__);
 }
 
 bool CPeripheralBusUSB::PerformDeviceScan(PeripheralScanResults &results)
@@ -42,7 +42,7 @@ bool CPeripheralBusUSB::PerformDeviceScan(PeripheralScanResults &results)
                                  GetType(dev->config[0].interface[0].altsetting[0].bInterfaceClass) :
                                  GetType(dev->descriptor.bDeviceClass);
 #ifdef TARGET_FREEBSD
-      result.m_strLocation = StringUtils::Format("{}", dev->filename);
+      result.m_strLocation = std::to_string(dev->filename);
 #else
       result.m_strLocation = StringUtils::Format("/bus{}/dev{}", bus->dirname, dev->filename);
 #endif

@@ -454,7 +454,7 @@ const std::string CScraperParser::Parse(const std::string& strTag,
   TiXmlElement* pChildElement = m_pRootElement->FirstChildElement(strTag.c_str());
   if(pChildElement == NULL)
   {
-    CLog::Log(LOGERROR,"%s: Could not find scraper function %s",__FUNCTION__,strTag.c_str());
+    CLog::Log(LOGERROR, "{}: Could not find scraper function {}", __FUNCTION__, strTag);
     return "";
   }
   int iResult = 1; // default to param 1
@@ -548,7 +548,7 @@ void CScraperParser::ConvertJSON(std::string &string)
     int pos = reg.GetSubStart(1);
     std::string szReplace(reg.GetMatch(1));
 
-    std::string replace = StringUtils::Format("&#x{};", szReplace.c_str());
+    std::string replace = StringUtils::Format("&#x{};", szReplace);
     string.replace(string.begin()+pos-2, string.begin()+pos+4, replace);
   }
 
@@ -560,7 +560,7 @@ void CScraperParser::ConvertJSON(std::string &string)
     int pos2 = reg2.GetSubStart(2);
     std::string szHexValue(reg2.GetMatch(1));
 
-    std::string replace = StringUtils::Format("{}", strtol(szHexValue.c_str(), NULL, 16));
+    std::string replace = std::to_string(std::stol(szHexValue, NULL, 16));
     string.replace(string.begin()+pos1-2, string.begin()+pos2+reg2.GetSubLength(2), replace);
   }
 

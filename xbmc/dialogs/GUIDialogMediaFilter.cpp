@@ -366,7 +366,8 @@ void CGUIDialogMediaFilter::SetupView()
     localizedMediaId = 134;
 
   // set the heading
-  SET_CONTROL_LABEL(CONTROL_HEADING, StringUtils::Format(g_localizeStrings.Get(1275).c_str(), g_localizeStrings.Get(localizedMediaId).c_str()));
+  SET_CONTROL_LABEL(CONTROL_HEADING, StringUtils::Format(g_localizeStrings.Get(1275),
+                                                         g_localizeStrings.Get(localizedMediaId)));
 
   SET_CONTROL_LABEL(CONTROL_OKAY_BUTTON, 186);
   SET_CONTROL_LABEL(CONTROL_CLEAR_BUTTON, 192);
@@ -415,8 +416,7 @@ void CGUIDialogMediaFilter::InitializeSettings()
       }
     }
 
-    std::string settingId =
-        StringUtils::Format("filter.{}.{}", filter.mediaType.c_str(), filter.field);
+    std::string settingId = StringUtils::Format("filter.{}.{}", filter.mediaType, filter.field);
     if (filter.controlType == "edit")
     {
       CVariant data;
@@ -513,8 +513,9 @@ void CGUIDialogMediaFilter::InitializeSettings()
       if (filter.rule != NULL)
         handledRules--;
 
-      CLog::Log(LOGWARNING, "CGUIDialogMediaFilter: filter %d of media type %s with unknown control type '%s'",
-                filter.field, filter.mediaType.c_str(), filter.controlType.c_str());
+      CLog::Log(LOGWARNING,
+                "CGUIDialogMediaFilter: filter {} of media type {} with unknown control type '{}'",
+                filter.field, filter.mediaType, filter.controlType);
       continue;
     }
 
@@ -523,8 +524,10 @@ void CGUIDialogMediaFilter::InitializeSettings()
       if (filter.rule != NULL)
         handledRules--;
 
-      CLog::Log(LOGWARNING, "CGUIDialogMediaFilter: failed to create filter %d of media type %s with control type '%s'",
-                filter.field, filter.mediaType.c_str(), filter.controlType.c_str());
+      CLog::Log(LOGWARNING,
+                "CGUIDialogMediaFilter: failed to create filter {} of media type {} with control "
+                "type '{}'",
+                filter.field, filter.mediaType, filter.controlType);
       continue;
     }
 
@@ -541,7 +544,7 @@ bool CGUIDialogMediaFilter::SetPath(const std::string &path)
 {
   if (path.empty() || m_filter == NULL)
   {
-    CLog::Log(LOGWARNING, "CGUIDialogMediaFilter::SetPath(%s): invalid path or filter", path.c_str());
+    CLog::Log(LOGWARNING, "CGUIDialogMediaFilter::SetPath({}): invalid path or filter", path);
     return false;
   }
 
@@ -556,7 +559,10 @@ bool CGUIDialogMediaFilter::SetPath(const std::string &path)
     m_dbUrl = new CMusicDbUrl();
   else
   {
-    CLog::Log(LOGWARNING, "CGUIDialogMediaFilter::SetPath(%s): invalid path (neither videodb:// nor musicdb://)", path.c_str());
+    CLog::Log(
+        LOGWARNING,
+        "CGUIDialogMediaFilter::SetPath({}): invalid path (neither videodb:// nor musicdb://)",
+        path);
     return false;
   }
 
@@ -564,7 +570,7 @@ bool CGUIDialogMediaFilter::SetPath(const std::string &path)
      (video && m_dbUrl->GetType() != "movies" && m_dbUrl->GetType() != "tvshows" && m_dbUrl->GetType() != "episodes" && m_dbUrl->GetType() != "musicvideos") ||
      (!video && m_dbUrl->GetType() != "artists" && m_dbUrl->GetType() != "albums" && m_dbUrl->GetType() != "songs"))
   {
-    CLog::Log(LOGWARNING, "CGUIDialogMediaFilter::SetPath(%s): invalid media type", path.c_str());
+    CLog::Log(LOGWARNING, "CGUIDialogMediaFilter::SetPath({}): invalid media type", path);
     return false;
   }
 
@@ -602,7 +608,7 @@ void CGUIDialogMediaFilter::UpdateControls()
     else
     {
       CONTROL_ENABLE(control->GetID());
-      label = StringUtils::Format(g_localizeStrings.Get(21470).c_str(), label.c_str(), size);
+      label = StringUtils::Format(g_localizeStrings.Get(21470), label, size);
     }
     SET_CONTROL_LABEL(control->GetID(), label);
   }
@@ -791,7 +797,7 @@ void CGUIDialogMediaFilter::GetRange(const Filter &filter, int &min, int &interv
         table = "tvshow_view";
         year = StringUtils::Format(
             "strftime(\"%%Y\", {})",
-            DatabaseUtils::GetField(FieldYear, MediaTypeTvShow, DatabaseQueryPartWhere).c_str());
+            DatabaseUtils::GetField(FieldYear, MediaTypeTvShow, DatabaseQueryPartWhere));
       }
       else if (m_mediaType == "musicvideos")
       {

@@ -130,14 +130,14 @@ bool CVideoPlayerSubtitle::OpenStream(CDVDStreamInfo &hints, std::string &filena
     m_pSubtitleFileParser.reset(CDVDFactorySubtitle::CreateParser(filename));
     if (!m_pSubtitleFileParser)
     {
-      CLog::Log(LOGERROR, "%s - Unable to create subtitle parser", __FUNCTION__);
+      CLog::Log(LOGERROR, "{} - Unable to create subtitle parser", __FUNCTION__);
       CloseStream(true);
       return false;
     }
 
     if (!m_pSubtitleFileParser->Open(hints))
     {
-      CLog::Log(LOGERROR, "%s - Unable to init subtitle parser", __FUNCTION__);
+      CLog::Log(LOGERROR, "{} - Unable to init subtitle parser", __FUNCTION__);
       CloseStream(true);
       return false;
     }
@@ -149,11 +149,11 @@ bool CVideoPlayerSubtitle::OpenStream(CDVDStreamInfo &hints, std::string &filena
   if(hints.codec == AV_CODEC_ID_DVD_SUBTITLE && filename == "dvd")
     return true;
 
-  m_pOverlayCodec.reset(CDVDFactoryCodec::CreateOverlayCodec(hints));
+  m_pOverlayCodec = CDVDFactoryCodec::CreateOverlayCodec(hints);
   if(m_pOverlayCodec)
     return true;
 
-  CLog::Log(LOGERROR, "%s - Unable to init overlay codec", __FUNCTION__);
+  CLog::Log(LOGERROR, "{} - Unable to init overlay codec", __FUNCTION__);
   return false;
 }
 

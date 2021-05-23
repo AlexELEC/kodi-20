@@ -650,7 +650,7 @@ bool CDateTime::ToFileTime(const time_t& time, KODI::TIME::FileTime& fileTime) c
 
 bool CDateTime::ToFileTime(const tm& time, KODI::TIME::FileTime& fileTime) const
 {
-  KODI::TIME::SystemTime st = {0};
+  KODI::TIME::SystemTime st = {};
 
   st.year = time.tm_year + 1900;
   st.month = time.tm_mon + 1;
@@ -779,7 +779,7 @@ int CDateTime::GetMinuteOfDay() const
 
 bool CDateTime::SetDateTime(int year, int month, int day, int hour, int minute, int second)
 {
-  KODI::TIME::SystemTime st = {0};
+  KODI::TIME::SystemTime st = {};
 
   st.year = year;
   st.month = month;
@@ -1237,7 +1237,7 @@ std::string CDateTime::GetAsLocalizedTime(const std::string &format, bool withSe
       // Format hour string with the length of the mask
       std::string str;
       if (partLength==1)
-        str = StringUtils::Format("{}", hour);
+        str = std::to_string(hour);
       else
         str = StringUtils::Format("{:02}", hour);
 
@@ -1264,7 +1264,7 @@ std::string CDateTime::GetAsLocalizedTime(const std::string &format, bool withSe
       // Format minute string with the length of the mask
       std::string str;
       if (partLength==1)
-        str = StringUtils::Format("{}", dateTime.minute);
+        str = std::to_string(dateTime.minute);
       else
         str = StringUtils::Format("{:02}", dateTime.minute);
 
@@ -1293,7 +1293,7 @@ std::string CDateTime::GetAsLocalizedTime(const std::string &format, bool withSe
         // Format seconds string with the length of the mask
         std::string str;
         if (partLength==1)
-          str = StringUtils::Format("{}", dateTime.second);
+          str = std::to_string(dateTime.second);
         else
           str = StringUtils::Format("{:02}", dateTime.second);
 
@@ -1386,7 +1386,7 @@ std::string CDateTime::GetAsLocalizedDate(const std::string &strFormat) const
       // Format string with the length of the mask
       std::string str;
       if (partLength==1) // single-digit number
-        str = StringUtils::Format("{}", dateTime.day);
+        str = std::to_string(dateTime.day);
       else if (partLength==2) // two-digit number
         str = StringUtils::Format("{:02}", dateTime.day);
       else // Day of week string
@@ -1418,7 +1418,7 @@ std::string CDateTime::GetAsLocalizedDate(const std::string &strFormat) const
       // Format string with the length of the mask
       std::string str;
       if (partLength==1) // single-digit number
-        str = StringUtils::Format("{}", dateTime.month);
+        str = std::to_string(dateTime.month);
       else if (partLength==2) // two-digit number
         str = StringUtils::Format("{:02}", dateTime.month);
       else // Month string
@@ -1448,7 +1448,7 @@ std::string CDateTime::GetAsLocalizedDate(const std::string &strFormat) const
       }
 
       // Format string with the length of the mask
-      std::string str = StringUtils::Format("{}", dateTime.year); // four-digit number
+      std::string str = std::to_string(dateTime.year); // four-digit number
       if (partLength <= 2)
         str.erase(0, 2); // two-digit number
 
@@ -1525,7 +1525,8 @@ std::string CDateTime::GetAsRFC1123DateTime() const
   else if (weekDay > 6)
     weekDay = 6;
   if (weekDay != time.GetDayOfWeek())
-    CLog::Log(LOGWARNING, "Invalid day of week %d in %s", time.GetDayOfWeek(), time.GetAsDBDateTime().c_str());
+    CLog::Log(LOGWARNING, "Invalid day of week {} in {}", time.GetDayOfWeek(),
+              time.GetAsDBDateTime());
 
   int month = time.GetMonth();
   if (month < 1)
@@ -1533,7 +1534,7 @@ std::string CDateTime::GetAsRFC1123DateTime() const
   else if (month > 12)
     month = 12;
   if (month != time.GetMonth())
-    CLog::Log(LOGWARNING, "Invalid month %d in %s", time.GetMonth(), time.GetAsDBDateTime().c_str());
+    CLog::Log(LOGWARNING, "Invalid month {} in {}", time.GetMonth(), time.GetAsDBDateTime());
 
   return StringUtils::Format("{}, {:02} {} {:04} {:02}:{:02}:{:02} GMT", DAY_NAMES[weekDay],
                              time.GetDay(), MONTH_NAMES[month - 1], time.GetYear(), time.GetHour(),
@@ -1563,8 +1564,7 @@ std::string CDateTime::GetAsW3CDateTime(bool asUtc /* = false */) const
 
   CDateTimeSpan bias = GetTimezoneBias();
   return result + StringUtils::Format("{}{:02}:{:02}", (bias.GetSecondsTotal() >= 0 ? '+' : '-'),
-                                      abs(bias.GetHours()), abs(bias.GetMinutes()))
-                      .c_str();
+                                      abs(bias.GetHours()), abs(bias.GetMinutes()));
 }
 
 int CDateTime::MonthStringToMonthNum(const std::string& month)

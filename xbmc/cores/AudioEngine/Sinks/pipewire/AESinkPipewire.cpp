@@ -310,7 +310,7 @@ bool CAESinkPipewire::Initialize(AEAudioFormat& format, std::string& device)
 
   m_latency = 20; // ms
   uint32_t frames = std::nearbyint((m_latency * format.m_sampleRate) / 1000.0);
-  std::string fraction = StringUtils::Format("%u/%u", frames, format.m_sampleRate);
+  std::string fraction = StringUtils::Format("{}/{}", frames, format.m_sampleRate);
 
   std::array<spa_dict_item, 5> items = {
       SPA_DICT_ITEM_INIT(PW_KEY_MEDIA_TYPE, "Audio"),
@@ -338,12 +338,11 @@ bool CAESinkPipewire::Initialize(AEAudioFormat& format, std::string& device)
   CLog::Log(LOGDEBUG, "CAESinkPipewire::{} - latency: {}/{} ({:.3f}s)", __FUNCTION__, frames,
             format.m_sampleRate, static_cast<double>(frames) / format.m_sampleRate);
 
-  spa_audio_info_raw info = {
-      .format = pwFormat,
-      .flags = SPA_AUDIO_FLAG_NONE,
-      .rate = format.m_sampleRate,
-      .channels = static_cast<uint32_t>(pwChannels.size()),
-  };
+  spa_audio_info_raw info{};
+  info.format = pwFormat;
+  info.flags = SPA_AUDIO_FLAG_NONE;
+  info.rate = format.m_sampleRate;
+  info.channels = static_cast<uint32_t>(pwChannels.size());
 
   for (size_t index = 0; index < pwChannels.size(); index++)
     info.position[index] = pwChannels[index];
