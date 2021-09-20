@@ -43,7 +43,7 @@
             <dependency type="enable">
               <condition setting="videoplayer.usevdpau" operator="is">true</condition> <!-- USE VDPAU -->
             </dependency>
-           </dependencies>
+          </dependencies>
           <control type="toggle" />
         </setting>
         <setting id="videoplayer.usevdpauvc1" type="boolean" parent="videoplayer.usevdpau" label="13445" help="13446">
@@ -55,7 +55,7 @@
             <dependency type="enable">
               <condition setting="videoplayer.usevdpau" operator="is">true</condition> <!-- USE VDPAU -->
             </dependency>
-           </dependencies>
+          </dependencies>
           <control type="toggle" />
         </setting>
         <setting id="videoplayer.usevaapi" type="boolean" label="13426" help="36156">
@@ -220,7 +220,7 @@
     </category>
     <category id="input">
       <group id="4" label="35150">
-        <setting id="input.libinputkeyboardlayout" type="string" label="310" help="36436">
+        <setting id="input.libinputkeyboardlayout" type="string" label="407" help="36436">
           <level>0</level>
           <default>us</default>
           <visible>false</visible>

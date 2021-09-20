@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.12)
 if(WIN32)
   # Version 3.15 is required to use "PREPEND" for dependencies
   cmake_minimum_required(VERSION 3.15)
@@ -131,6 +131,7 @@ set(required_deps ASS
                   FreeType
                   FriBidi
                   fstrcmp
+                  HarfBuzz
                   Iconv
                   LibDvd
                   Lzo2
@@ -182,8 +183,6 @@ core_require_dep(${required_deps})
 # Required tools
 find_package(TexturePacker REQUIRED)
 find_package(JsonSchemaBuilder REQUIRED)
-
-SET(PYTHON_VERSION 3.8)
 
 if(ENABLE_MARIADBCLIENT AND NOT ENABLE_MARIADBCLIENT STREQUAL AUTO AND ENABLE_MYSQLCLIENT AND NOT ENABLE_MYSQLCLIENT STREQUAL AUTO)
   MESSAGE(FATAL_ERROR "You can not use MySql and MariaDB at the same time. Disable one by adding -DENABLE_MYSQLCLIENT=OFF or -DENABLE_MARIADBCLIENT=OFF.")
@@ -504,7 +503,14 @@ if(VERBOSE)
   message(STATUS "CMAKE_C_FLAGS         : ${CMAKE_C_FLAGS}")
   message(STATUS "CMAKE_CXX_FLAGS       : ${CMAKE_CXX_FLAGS}")
   message(STATUS "CMAKE_EXE_LINKER_FLAGS: ${CMAKE_EXE_LINKER_FLAGS}")
-  message(STATUS "LTO_OPTIMIZATION:     : ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
+  message(STATUS "LTO_OPTIMIZATION      : ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
+  if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+    message(STATUS "CMAKE_CXX_COMPILE_OPTIONS_IPO: ${CMAKE_CXX_COMPILE_OPTIONS_IPO}")
+    message(STATUS "CMAKE_C_COMPILE_OPTIONS_IPO  : ${CMAKE_C_COMPILE_OPTIONS_IPO}")
+    message(STATUS "CMAKE_AR                     : ${CMAKE_AR}")
+    message(STATUS "CMAKE_NM                     : ${CMAKE_NM}")
+    message(STATUS "CMAKE_LINKER                 : ${CMAKE_LINKER}")
+  endif()
   message(STATUS "#---------------------------------------------#")
   message(STATUS "bindir     : ${bindir}")
   message(STATUS "includedir : ${includedir}")

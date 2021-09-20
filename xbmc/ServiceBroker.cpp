@@ -84,6 +84,13 @@ XBPython& CServiceBroker::GetXBPython()
 }
 #endif
 
+#if defined(HAS_FILESYSTEM_SMB)
+WSDiscovery::IWSDiscovery& CServiceBroker::GetWSDiscovery()
+{
+  return g_application.m_ServiceManager->GetWSDiscovery();
+}
+#endif
+
 #if !defined(TARGET_WINDOWS) && defined(HAS_DVD_DRIVE)
 MEDIA_DETECT::CDetectDVDMedia& CServiceBroker::GetDetectDVDMedia()
 {
@@ -104,6 +111,11 @@ CContextMenuManager& CServiceBroker::GetContextMenuManager()
 CDataCacheCore &CServiceBroker::GetDataCacheCore()
 {
   return g_application.m_ServiceManager->GetDataCacheCore();
+}
+
+CPlatform& CServiceBroker::GetPlatform()
+{
+  return g_application.m_ServiceManager->GetPlatform();
 }
 
 PLAYLIST::CPlayListPlayer &CServiceBroker::GetPlaylistPlayer()

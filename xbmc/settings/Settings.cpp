@@ -336,6 +336,7 @@ constexpr const char* CSettings::SETTING_SMB_WORKGROUP;
 constexpr const char* CSettings::SETTING_SMB_MINPROTOCOL;
 constexpr const char* CSettings::SETTING_SMB_MAXPROTOCOL;
 constexpr const char* CSettings::SETTING_SMB_LEGACYSECURITY;
+constexpr const char* CSettings::SETTING_SERVICES_WSDISCOVERY;
 constexpr const char* CSettings::SETTING_VIDEOSCREEN_MONITOR;
 constexpr const char* CSettings::SETTING_VIDEOSCREEN_SCREEN;
 constexpr const char* CSettings::SETTING_VIDEOSCREEN_WHITELIST;
@@ -352,6 +353,7 @@ constexpr const char* CSettings::SETTING_VIDEOSCREEN_GUICALIBRATION;
 constexpr const char* CSettings::SETTING_VIDEOSCREEN_TESTPATTERN;
 constexpr const char* CSettings::SETTING_VIDEOSCREEN_LIMITEDRANGE;
 constexpr const char* CSettings::SETTING_VIDEOSCREEN_FRAMEPACKING;
+constexpr const char* CSettings::SETTING_VIDEOSCREEN_10BITSURFACES;
 constexpr const char* CSettings::SETTING_AUDIOOUTPUT_AUDIODEVICE;
 constexpr const char* CSettings::SETTING_AUDIOOUTPUT_CHANNELS;
 constexpr const char* CSettings::SETTING_AUDIOOUTPUT_CONFIG;
@@ -957,6 +959,7 @@ void CSettings::InitializeISettingCallbacks()
   settingSet.insert(CSettings::SETTING_VIDEOSCREEN_DISPLAYPROFILE);
   settingSet.insert(CSettings::SETTING_VIDEOSCREEN_BLANKDISPLAYS);
   settingSet.insert(CSettings::SETTING_VIDEOSCREEN_WHITELIST);
+  settingSet.insert(CSettings::SETTING_VIDEOSCREEN_10BITSURFACES);
   GetSettingsManager()->RegisterCallback(&CDisplaySettings::GetInstance(), settingSet);
 
   settingSet.clear();

@@ -5,16 +5,25 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: KODI Main\n"
-"Report-Msgid-Bugs-To: https://github.com/xbmc/xbmc/issues/\n"
+"Report-Msgid-Bugs-To: translations@kodi.tv\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Kodi Translation Team\n"
-"Language-Team: Danish (Denmark) (http://www.transifex.com/projects/p/kodi-main/language/da_DK/)\n"
+"PO-Revision-Date: 2021-08-21 21:42+0000\n"
+"Last-Translator: Christian Gade <gade@kodi.tv>\n"
+"Language-Team: Danish <https://kodi.weblate.cloud/projects/kodi-add-ons-skins/skin-estouchy/da_dk/>\n"
+"Language: da_dk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: da_DK\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 4.8\n"
+
+msgctxt "Addon Summary"
+msgid "Skin for touchscreen devices"
+msgstr "Skin for berøringsfølsomme enheder"
+
+msgctxt "Addon Description"
+msgid "Skin designed to be used on touchscreen devices like tablets and smartphones"
+msgstr "Skin der er designet til brug på berøringsfølsomme enheder som f.eks. tablets og smartphones"
 
 msgctxt "#31002"
 msgid "Audio Settings"
@@ -46,7 +55,7 @@ msgstr "Arbejder..."
 
 msgctxt "#31011"
 msgid "Recent"
-msgstr "Nyligt"
+msgstr "Seneste"
 
 msgctxt "#31013"
 msgid "Movies"
@@ -58,7 +67,7 @@ msgstr "Afsnit"
 
 msgctxt "#31015"
 msgid "Player info"
-msgstr "Information for afspiller"
+msgstr "Information om afspiller"
 
 msgctxt "#31016"
 msgid "Albums"
@@ -70,7 +79,7 @@ msgstr "PVR-information"
 
 msgctxt "#31018"
 msgid "Player process info"
-msgstr "Procesinformation for afspilning"
+msgstr "Information om afspilningsproces"
 
 msgctxt "#31019"
 msgid "Video decoder"
@@ -100,6 +109,18 @@ msgctxt "#31039"
 msgid "Updated:"
 msgstr "Opdateret:"
 
+msgctxt "#31040"
+msgid "Select + X"
+msgstr "Select + X"
+
+msgctxt "#31041"
+msgid "Select + B"
+msgstr "Select + B"
+
+msgctxt "#31042"
+msgid "Select + Start"
+msgstr "Select + Start"
+
 msgctxt "#31043"
 msgid "PAUSED"
 msgstr "PAUSE"
@@ -122,11 +143,11 @@ msgstr "Sluttidspunkt"
 
 msgctxt "#31050"
 msgid "Sort: Ascending"
-msgstr "Sorter: stigende"
+msgstr "Sorter: Stigende"
 
 msgctxt "#31051"
 msgid "Sort: Descending"
-msgstr "Sorter: faldende"
+msgstr "Sorter: Faldende"
 
 msgctxt "#31055"
 msgid "Open playlist"
@@ -208,9 +229,38 @@ msgctxt "#31400"
 msgid "Change the skin · Set language and region · Change file listing options · Set up a screensaver"
 msgstr "Skift skin · Vælg sprog og region · Skift indstillinger for filvisning · Opsæt en pauseskærm"
 
+# empty strings from id 31401 to 31404
+msgctxt "#31405"
+msgid "Configure & manage media sharing services · Configure & manage the weather service"
+msgstr "Konfigurer og administrer mediedelingstjenester · Konfigurer og administrer vejretjenesten"
+
+msgctxt "#31406"
+msgid "Configure display · Configure audio · Configure internet access · Configure power saving· Configure logging"
+msgstr "Konfigurer skærm · Konfigurer lyd · Konfigurer internetadgang · Konfigurer strømbesparelse · Konfigurer logføring"
+
 msgctxt "#31407"
 msgid "Manage your installed add-ons · Browse for and install add-ons from kodi.tv · Modify add-on settings"
 msgstr "Administrer dine installerede add-ons · Gennemse og installer add-ons fra kodi.tv · Tilpas indstillinger for add-ons"
+
+msgctxt "#31408"
+msgid "Configure actions that can be used during playback · Configure how media content is played"
+msgstr "Konfigurer handlinger, der kan bruges under afspilning · Konfigurer hvordan medieindhold afspilles"
+
+msgctxt "#31409"
+msgid "Configure library sources · Show the media lists display content · Configure how library lists are navigated"
+msgstr "Konfiguration af bibliotekilder · Vis medielisternes indholdsvisning · Konfigurer hvordan biblioteklister navigeres"
+
+msgctxt "#31410"
+msgid "Configure skin · Configure region · Configure control · Configure screensaver · Configure master lock"
+msgstr "Konfigurer skin · Konfigurer område · Konfigurer kontrol · Konfigurer pauseskærm · Konfigurer hovedlås"
+
+msgctxt "#31411"
+msgid "Configure your profiles · Set locking options · Enable login screen"
+msgstr "Konfigurer dine profiler · Angiv låsemuligheder · Aktiver loginskærm"
+
+msgctxt "#31412"
+msgid "Display system information · Hardware statistics · Check storage availability · View network configuration"
+msgstr "Vis systemoplysninger · Hardwarestatistik · Kontroller tilgængelighed af lagerplads · Se netværkskonfiguration"
 
 msgctxt "#31421"
 msgid "Select your Kodi user Profile[CR]to login and continue"
@@ -288,14 +338,23 @@ msgctxt "#31565"
 msgid "Show deleted"
 msgstr "Vis slettede"
 
+# empty strings from id 31566 to 31899
+msgctxt "#31900"
+msgid "First Run"
+msgstr "Første kørsel"
+
 msgctxt "#31901"
 msgid "There are two things to know about navigating Estouchy"
 msgstr "Der er to ting at vide omkring navigeringen i Estouchy"
 
 msgctxt "#31902"
 msgid "The Kodi logo functions as a 'HOME' button. Whenever you touch it, you will be taken back to the home screen."
-msgstr "Kodi-logoet fungerer som en 'HOME' -knap. Hver gang du trykker på den, føres du tilbage til startskærmen."
+msgstr "Kodi-logoet fungerer som en 'HOME'-knap. Hver gang du trykker på den, føres du tilbage til startskærmen."
 
 msgctxt "#31903"
 msgid "When you are playing audio or video, the item title will appear at the top of the screen. Touching it will take you to the fullscreen visualization or video window."
 msgstr "Når du afspiller lyd eller video, vises titlen øverst på skærmen. Hvis du trykker på den, kommer du til visualiseringen eller videovinduet i fuld skærm."
+
+msgctxt "#31904"
+msgid "Now Playing Title..."
+msgstr "Titel der afspilles nu..."

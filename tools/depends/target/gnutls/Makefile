@@ -3,9 +3,15 @@ DEPS= ../../Makefile.include Makefile size-max.patch add-dl-as-private-lib.patch
 
 # lib name, version
 LIBNAME=gnutls
-VERSION=3.6.14
+VERSION=3.6.16
 SOURCE=$(LIBNAME)-$(VERSION)
 ARCHIVE=$(SOURCE).tar.xz
+
+ifeq ($(OS),osx)
+ifeq ($(CPU),arm64)
+CONFIGURE_OPTIONS= --disable-hardware-acceleration
+endif
+endif
 
 # configuration settings
 CONFIGURE=./configure --prefix=$(PREFIX) --disable-shared --without-p11-kit --disable-nls --with-included-unistring \

@@ -19,6 +19,8 @@
 
 #include <WS2tcpip.h>
 
+using namespace std::chrono_literals;
+
 #define IRSS_PORT 24000
 #define IRSS_MAP_FILENAME "IRSSmap.xml"
 
@@ -81,7 +83,7 @@ void CIRServerSuite::Process()
       if (logging)
         CLog::LogF(LOGINFO, "failed to connect to irss, will keep retrying every 5 seconds");
 
-      if (AbortableWait(m_event, 5000) == WAIT_SIGNALED)
+      if (AbortableWait(m_event, 5000ms) == WAIT_SIGNALED)
         break;
 
       logging = false;
@@ -381,7 +383,7 @@ bool CIRServerSuite::HandleRemoteEvent(CIrssMessage& message)
     CLog::LogF(LOGDEBUG, "remoteEvent: {} {}", deviceName, keycode);
     unsigned button = m_irTranslator.TranslateButton(deviceName, keycode);
 
-    XBMC_Event newEvent;
+    XBMC_Event newEvent = {};
     newEvent.type = XBMC_BUTTON;
     newEvent.keybutton.button = button;
     newEvent.keybutton.holdtime = 0;

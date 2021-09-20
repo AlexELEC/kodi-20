@@ -14,7 +14,6 @@
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
 #include "messaging/ApplicationMessenger.h"
-#include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/SystemInfo.h"
@@ -126,7 +125,7 @@ void DX::DeviceResources::Release()
 void DX::DeviceResources::GetOutput(IDXGIOutput** ppOutput) const
 {
   ComPtr<IDXGIOutput> pOutput;
-  if (FAILED(m_swapChain->GetContainingOutput(pOutput.GetAddressOf())) || !pOutput)
+  if (!m_swapChain || FAILED(m_swapChain->GetContainingOutput(pOutput.GetAddressOf())) || !pOutput)
     m_output.As(&pOutput);
   *ppOutput = pOutput.Detach();
 }
@@ -141,14 +140,16 @@ void DX::DeviceResources::GetDisplayMode(DXGI_MODE_DESC* mode) const
 {
   DXGI_OUTPUT_DESC outDesc;
   ComPtr<IDXGIOutput> pOutput;
+  DXGI_SWAP_CHAIN_DESC scDesc;
+
+  if (!m_swapChain)
+    return;
+
+  m_swapChain->GetDesc(&scDesc);
 
   GetOutput(pOutput.GetAddressOf());
   pOutput->GetDesc(&outDesc);
 
-  DXGI_SWAP_CHAIN_DESC scDesc;
-  m_swapChain->GetDesc(&scDesc);
-
-  memset(mode, 0, sizeof(DXGI_MODE_DESC));
   // desktop coords depend on DPI
   mode->Width = DX::ConvertDipsToPixels(outDesc.DesktopCoordinates.right - outDesc.DesktopCoordinates.left, m_dpi);
   mode->Height = DX::ConvertDipsToPixels(outDesc.DesktopCoordinates.bottom - outDesc.DesktopCoordinates.top, m_dpi);
@@ -157,8 +158,7 @@ void DX::DeviceResources::GetDisplayMode(DXGI_MODE_DESC* mode) const
   mode->ScanlineOrdering = scDesc.BufferDesc.ScanlineOrdering;
 
 #ifdef TARGET_WINDOWS_DESKTOP
-  DEVMODEW sDevMode;
-  memset(&sDevMode, 0, sizeof(sDevMode));
+  DEVMODEW sDevMode = {};
   sDevMode.dmSize = sizeof(sDevMode);
 
   // EnumDisplaySettingsW is only one way to detect current refresh rate
@@ -230,7 +230,7 @@ bool DX::DeviceResources::SetFullScreen(bool fullscreen, RESOLUTION_INFO& res)
     const bool isResValid = res.iWidth > 0 && res.iHeight > 0 && res.fRefreshRate > 0.f;
     if (isResValid)
     {
-      DXGI_MODE_DESC currentMode;
+      DXGI_MODE_DESC currentMode = {};
       GetDisplayMode(&currentMode);
       DXGI_SWAP_CHAIN_DESC scDesc;
       m_swapChain->GetDesc(&scDesc);
@@ -405,8 +405,7 @@ void DX::DeviceResources::CreateDeviceResources()
                                                                           // Add more message IDs here as needed
       };
 
-      D3D11_INFO_QUEUE_FILTER filter;
-      ZeroMemory(&filter, sizeof(filter));
+      D3D11_INFO_QUEUE_FILTER filter = {};
       filter.DenyList.NumIDs = hide.size();
       filter.DenyList.pIDList = hide.data();
       d3dInfoQueue->AddStorageFilterEntries(&filter);
@@ -588,13 +587,29 @@ void DX::DeviceResources::ResizeBuffers()
       // and correctly set up the new device.
       return;
     }
+    else if (hr == DXGI_ERROR_INVALID_CALL)
+    {
+      // Called when Windows HDR is toggled externally to Kodi.
+      // Is forced to re-create swap chain to avoid crash.
+      CreateWindowSizeDependentResources();
+      return;
+    }
     CHECK_ERR();
   }
   else // Otherwise, create a new one using the same adapter as the existing Direct3D device.
   {
     HDR_STATUS hdrStatus = CWIN32Util::GetWindowsHDRStatus();
     const bool isHdrEnabled = (hdrStatus == HDR_STATUS::HDR_ON);
-    const bool is10bitSafe = (hdrStatus != HDR_STATUS::HDR_UNSUPPORTED);
+    bool use10bit = (hdrStatus != HDR_STATUS::HDR_UNSUPPORTED);
+
+    // 0 = Auto | 1 = Never | 2 = Always
+    int use10bitSetting = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+        CSettings::SETTING_VIDEOSCREEN_10BITSURFACES);
+
+    if (use10bitSetting == 1)
+      use10bit = false;
+    else if (use10bitSetting == 2)
+      use10bit = true;
 
     DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
     swapChainDesc.Width = lround(m_outputSize.Width);
@@ -602,8 +617,11 @@ void DX::DeviceResources::ResizeBuffers()
     swapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
     swapChainDesc.Stereo = bHWStereoEnabled;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    // HDR 60 fps needs 6 buffers to avoid frame drops but it's good for all
-    swapChainDesc.BufferCount = 6;
+#ifdef TARGET_WINDOWS_DESKTOP
+    swapChainDesc.BufferCount = 6; // HDR 60 fps needs 6 buffers to avoid frame drops
+#else
+    swapChainDesc.BufferCount = 3; // Xbox don't like 6 backbuffers (3 is fine even for 4K 60 fps)
+#endif
     // FLIP_DISCARD improves performance (needed in some systems for 4K HDR 60 fps)
     swapChainDesc.SwapEffect = CSysInfo::IsWindowsVersionAtLeast(CSysInfo::WindowsVersionWin10)
                                    ? DXGI_SWAP_EFFECT_FLIP_DISCARD
@@ -619,8 +637,7 @@ void DX::DeviceResources::ResizeBuffers()
 
     ComPtr<IDXGISwapChain1> swapChain;
     if (m_d3dFeatureLevel >= D3D_FEATURE_LEVEL_11_0 && !bHWStereoEnabled &&
-        (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_bTry10bitOutput ||
-         isHdrEnabled || is10bitSafe))
+        (isHdrEnabled || use10bit))
     {
       swapChainDesc.Format = DXGI_FORMAT_R10G10B10A2_UNORM;
       hr = CreateSwapChain(swapChainDesc, scFSDesc, &swapChain);
@@ -682,6 +699,11 @@ void DX::DeviceResources::ResizeBuffers()
 void DX::DeviceResources::CreateWindowSizeDependentResources()
 {
   ReleaseBackBuffer();
+
+  DestroySwapChain();
+
+  if (!m_dxgiFactory->IsCurrent()) // HDR toggling requires re-create factory
+    CreateFactory();
 
   UpdateRenderTargetSize();
   ResizeBuffers();
@@ -874,7 +896,8 @@ void DX::DeviceResources::HandleDeviceLost(bool removed)
   if (backbuferExists)
     ReleaseBackBuffer();
 
-  m_swapChain = nullptr;
+  DestroySwapChain();
+
   CreateDeviceResources();
   UpdateRenderTargetSize();
   ResizeBuffers();
@@ -922,7 +945,7 @@ void DX::DeviceResources::Present()
   // The first argument instructs DXGI to block until VSync, putting the application
   // to sleep until the next VSync. This ensures we don't waste any cycles rendering
   // frames that will never be displayed to the screen.
-  DXGI_PRESENT_PARAMETERS parameters = { 0 };
+  DXGI_PRESENT_PARAMETERS parameters = {};
   HRESULT hr = m_swapChain->Present1(1, 0, &parameters);
 
   // If the device was removed either by a disconnection or a driver upgrade, we
@@ -938,8 +961,6 @@ void DX::DeviceResources::Present()
     {
       CreateWindowSizeDependentResources();
     }
-    if (!m_dxgiFactory->IsCurrent())
-      CreateFactory();
   }
 
   if (m_d3dContext == m_deferrContext)
@@ -960,8 +981,8 @@ void DX::DeviceResources::ClearRenderTarget(ID3D11RenderTargetView* pRTView, flo
 
 void DX::DeviceResources::HandleOutputChange(const std::function<bool(DXGI_OUTPUT_DESC)>& cmpFunc)
 {
-  DXGI_ADAPTER_DESC currentDesc = { 0 };
-  DXGI_ADAPTER_DESC foundDesc = { 0 };
+  DXGI_ADAPTER_DESC currentDesc = {};
+  DXGI_ADAPTER_DESC foundDesc = {};
 
   ComPtr<IDXGIFactory1> factory;
   if (m_adapter)
@@ -1206,9 +1227,7 @@ void DX::DeviceResources::SetHdrColorSpace(const DXGI_COLOR_SPACE_TYPE colorSpac
 HDR_STATUS DX::DeviceResources::ToggleHDR()
 {
   DXGI_MODE_DESC md = {};
-
-  if (m_swapChain)
-    GetDisplayMode(&md);
+  GetDisplayMode(&md);
 
   // Toggle display HDR
   DX::Windowing()->SetAlteringWindow(true);
@@ -1233,6 +1252,14 @@ HDR_STATUS DX::DeviceResources::ToggleHDR()
   }
 
   return hdrStatus;
+}
+
+void DX::DeviceResources::ApplyDisplaySettings()
+{
+  CLog::LogF(LOGDEBUG, "Re-create swapchain due Display Settings changed");
+
+  DestroySwapChain();
+  CreateWindowSizeDependentResources();
 }
 
 DEBUG_INFO_RENDER DX::DeviceResources::GetDebugInfo() const

@@ -53,13 +53,24 @@ public:
   CDRMCrtc* GetCrtc() const { return m_crtc; }
   CDRMConnector* GetConnector() const { return m_connector; }
 
+  std::vector<std::string> GetConnectedConnectorNames()
+  {
+    std::vector<std::string> connectorNames;
+    for (const auto& connector : m_connectors)
+    {
+      if (connector->IsConnected())
+        connectorNames.emplace_back(connector->GetName());
+    }
+
+    return connectorNames;
+  }
+
   virtual RESOLUTION_INFO GetCurrentMode();
   virtual std::vector<RESOLUTION_INFO> GetModes();
   virtual bool SetMode(const RESOLUTION_INFO& res);
 
   static uint32_t FourCCWithAlpha(uint32_t fourcc);
   static uint32_t FourCCWithoutAlpha(uint32_t fourcc);
-  static std::string FourCCToString(uint32_t fourcc);
 
 protected:
   bool OpenDrm(bool needConnector);

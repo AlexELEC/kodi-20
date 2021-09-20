@@ -15,7 +15,7 @@ DEPENDS = \
 	taglib libusb libnfs \
 	pythonmodule-pil pythonmodule-pycryptodome pythonmodule-setuptools \
 	libxslt ffmpeg crossguid libudfread \
-	libdvdread libdvdnav libdvdcss p8-platform flatbuffers dav1d
+	libdvdread libdvdnav libdvdcss p8-platform flatbuffers dav1d xz
 
 ifeq ($(ENABLE_GPLV3),yes)
   DEPENDS+=samba-gplv3 libcdio-gplv3
@@ -33,8 +33,13 @@ ifeq ($(OS),darwin_embedded)
 endif
 
 ifeq ($(OS),osx)
-  DEPENDS += libsdl
   EXCLUDED_DEPENDS = libusb
+  ifeq ($(CPU),arm64)
+    # ToDo: support all regular depends for apple silicon
+    EXCLUDED_DEPENDS += pythonmodule-pil pythonmodule-pycryptodome pythonmodule-setuptools
+  else
+    DEPENDS += libsdl
+  endif
 endif
 
 ifeq ($(OS),android)
@@ -63,6 +68,7 @@ ifeq ($(OS),linux)
   DEPENDS += dbus libuuid alsa-lib libdrm libxkbcommon libinput libudev libevdev mtdev wayland waylandpp wayland-protocols linux-system-x11-libs
   ALSA_LIB = alsa-lib
   LIBUUID = libuuid
+  LIBDRM = libdrm
 
   ifeq ($(RENDER_SYSTEM),gl)
     WAYLANDPP_DEPS += linux-system-gl-libs
@@ -87,13 +93,14 @@ endif
 all: .installed-$(PLATFORM)
 
 gettext: $(ICONV)
+xz: gettext
 libgcrypt: libgpg-error
 fontconfig: freetype2 expat $(ICONV) $(LIBUUID)
 curl: openssl nghttp2
 harfbuzz: meson-cross-file $(ICONV)
 libass: fontconfig fribidi harfbuzz libpng freetype2 expat $(ICONV)
 libmicrohttpd: gnutls libgcrypt libgpg-error
-python3: expat gettext libxml2 sqlite3 openssl libffi bzip2
+python3: expat gettext libxml2 sqlite3 openssl libffi bzip2 xz
 libcdio: $(ICONV)
 libcdio-gplv3: $(ICONV)
 libplist: $(ZLIB)
@@ -108,7 +115,7 @@ pythonmodule-pycryptodome: $(PYMODULE_DEPS) python3 pythonmodule-setuptools
 pythonmodule-pil: bzip2 $(PYMODULE_DEPS) $(ZLIB) libjpeg-turbo libpng freetype2 python3 pythonmodule-setuptools
 pythonmodule-setuptools: $(PYMODULE_DEPS) python3
 libxslt: libgcrypt libxml2
-ffmpeg: $(ICONV) $(ZLIB) bzip2 gnutls dav1d $(LIBVA)
+ffmpeg: $(ICONV) $(ZLIB) bzip2 gnutls dav1d $(LIBVA) $(LIBDRM)
 libcec: p8-platform
 crossguid: $(LIBUUID)
 libdvdnav: libdvdread

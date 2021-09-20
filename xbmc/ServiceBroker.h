@@ -63,6 +63,12 @@ class CDecoderFilterManager;
 class CMediaManager;
 class CCPUInfo;
 class CLog;
+class CPlatform;
+
+namespace WSDiscovery
+{
+class IWSDiscovery;
+}
 
 namespace KODI
 {
@@ -101,10 +107,12 @@ public:
   static ADDON::CBinaryAddonCache &GetBinaryAddonCache();
   static ADDON::CVFSAddonCache &GetVFSAddonCache();
   static XBPython &GetXBPython();
+  static WSDiscovery::IWSDiscovery& GetWSDiscovery();
   static MEDIA_DETECT::CDetectDVDMedia& GetDetectDVDMedia();
   static PVR::CPVRManager &GetPVRManager();
   static CContextMenuManager& GetContextMenuManager();
   static CDataCacheCore& GetDataCacheCore();
+  static CPlatform& GetPlatform();
   static PLAYLIST::CPlayListPlayer& GetPlaylistPlayer();
   static KODI::GAME::CControllerManager& GetGameControllerManager();
   static KODI::GAME::CGameServices& GetGameServices();

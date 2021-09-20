@@ -1,20 +1,33 @@
 # Kodi Media Center language file
 # Addon Name: Estuary
 # Addon id: skin.estuary
-# Addon Provider: phil65, Ichabod Fletchman
+# Addon Provider: Team Kodi
 msgid ""
 msgstr ""
 "Project-Id-Version: KODI Main\n"
-"Report-Msgid-Bugs-To: https://github.com/xbmc/xbmc/issues/\n"
+"Report-Msgid-Bugs-To: translations@kodi.tv\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Kodi Translation Team\n"
-"Language-Team: Thai (Thailand) (http://www.transifex.com/projects/p/kodi-main/language/th_TH/)\n"
+"PO-Revision-Date: 2021-07-22 14:58+0000\n"
+"Last-Translator: Christian Gade <gade@kodi.tv>\n"
+"Language-Team: Thai <https://kodi.weblate.cloud/projects/kodi-add-ons-skins/skin-estuary/th_th/>\n"
+"Language: th_th\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: th_TH\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.7.2\n"
+
+msgctxt "Addon Summary"
+msgid "Estuary skin by phil65. (Kodi's default skin)"
+msgstr "สกิน Estuary โดย phil65 และ Piers (หน้าตาเริ่มต้นของKodi)"
+
+msgctxt "Addon Description"
+msgid "Estuary is the default skin for Kodi 17.0 and above. It attempts to be easy for first time Kodi users to understand and use."
+msgstr "Estuary คือหน้าตาเริ่มต้นของ Kodi 17.0 และสูงกว่า เป็นความพยายามที่จะทำให้ง่ายสำหรับผู้ใช้ Kodi ในครั้งแรก ที่จะเข้าใจและใช้งาน"
+
+msgctxt "Addon Disclaimer"
+msgid "Estuary is the default skin for Kodi, removing it may cause issues"
+msgstr "Estuary เป็นหน้าตาเริ่มต้นสำหรับ Kodi, การลบมัน อาจทำให้เกิดปัญหา"
 
 msgctxt "#31000"
 msgid "Now playing"
@@ -48,6 +61,10 @@ msgctxt "#31007"
 msgid "Unwatched movies"
 msgstr "ภาพยนตร์ที่ยังไม่ได้ดู"
 
+msgctxt "#31008"
+msgid "Enable category widgets"
+msgstr ""
+
 msgctxt "#31009"
 msgid "Download icons"
 msgstr "ดาวน์โหลดไอคอน"
@@ -72,10 +89,12 @@ msgctxt "#31014"
 msgid "Unplayed albums"
 msgstr "อัลบั้มที่ยังไม่ได้เล่น"
 
+#. home screen recordings widget: recent tv / radio recordings
 msgctxt "#31015"
 msgid "Recent recordings"
 msgstr "การบันทึกล่าสุด"
 
+#. home screen channel widget: recently played tv channels. (please note that in some non-english languages #31018 and #31016 might not be equal)
 msgctxt "#31016"
 msgid "Recently played channels"
 msgstr "ช่องรายการที่เล่นล่าสุด"
@@ -84,6 +103,7 @@ msgctxt "#31017"
 msgid "Rated"
 msgstr "เรต"
 
+#. home screen channel widget: recently played radio channels. (please note that in some non-english languages #31018 and #31016 might not be equal)
 msgctxt "#31018"
 msgid "Recently played channels"
 msgstr "ช่องรายการที่เล่นล่าสุด"
@@ -108,9 +128,21 @@ msgctxt "#31023"
 msgid "Viewtype"
 msgstr "แบบมุมมอง"
 
+msgctxt "#31024"
+msgid "Choose rating to display for media items"
+msgstr ""
+
 msgctxt "#31025"
 msgid "No favourites found. You can add any item from media views to this list by using the context menu."
 msgstr "ไม่พบรายการที่ชื่นชอบ คุณสามารถเพิ่มรายการใด ๆ จากมุมมองสื่อมายังรายการนี้ โดยใช้เมนูตามเนื้อหา"
+
+msgctxt "#31026"
+msgid "Timeshift"
+msgstr ""
+
+msgctxt "#31027"
+msgid "Next aired"
+msgstr ""
 
 msgctxt "#31028"
 msgid "Show fanart"
@@ -147,6 +179,10 @@ msgstr "หน้า"
 msgctxt "#31036"
 msgid "items"
 msgstr "รายการ"
+
+msgctxt "#31037"
+msgid "Selected track"
+msgstr ""
 
 msgctxt "#31038"
 msgid "Rewind"
@@ -192,6 +228,14 @@ msgctxt "#31053"
 msgid "Arial based"
 msgstr "ใช้ฟ้อนท์ Arial"
 
+msgctxt "#31054"
+msgid "Press [B]Left[/B] to step back, or [B]Right[/B] to step forward"
+msgstr ""
+
+msgctxt "#31055"
+msgid "Press [B]Right[/B] to frame advance"
+msgstr ""
+
 msgctxt "#31056"
 msgid "Go to playlist"
 msgstr "ไปยังรายการเล่น"
@@ -203,6 +247,14 @@ msgstr "แสดงหน้าจอลงชื่อเข้าใช้เ
 msgctxt "#31058"
 msgid "Automatic Login on startup"
 msgstr "เข้าใช้โดยอัตโนมัติเมื่อเริ่มต้น"
+
+msgctxt "#31059"
+msgid "Select + X"
+msgstr ""
+
+msgctxt "#31060"
+msgid "Select + Start"
+msgstr ""
 
 msgctxt "#31061"
 msgid "Main menu items"
@@ -243,6 +295,10 @@ msgstr "โดย"
 msgctxt "#31072"
 msgid "Power Options"
 msgstr "ตัวเลือก ด้านพลังงาน"
+
+msgctxt "#31073"
+msgid "Total length"
+msgstr ""
 
 msgctxt "#31074"
 msgid "Total duration"
@@ -300,18 +356,22 @@ msgctxt "#31098"
 msgid "Select your Kodi user profile[CR]to login and continue"
 msgstr "เลือกโปรไฟล์ผู้ใช้ Kodi ของคุณ[CR]เพื่อเข้าสู่ระบบและดำเนินการต่อไป"
 
+#. viewtype name
 msgctxt "#31099"
 msgid "IconWall"
 msgstr "ผนังไอคอน"
 
+#. viewtype name
 msgctxt "#31100"
 msgid "Shift"
 msgstr "Shift"
 
+#. viewtype name
 msgctxt "#31101"
 msgid "InfoWall"
 msgstr "ผนังข้อมูล"
 
+#. viewtype name
 msgctxt "#31102"
 msgid "Wall"
 msgstr "ผนัง"
@@ -332,6 +392,7 @@ msgctxt "#31106"
 msgid "Teletext"
 msgstr "Teletext"
 
+#. viewtype name
 msgctxt "#31107"
 msgid "WideList"
 msgstr "รายการแบบกว้าง"
@@ -355,6 +416,10 @@ msgstr "ค้นหาจากคลังข้อมูลท้องถิ
 msgctxt "#31114"
 msgid "Search YouTube"
 msgstr "ค้นหาจากยูทูป"
+
+msgctxt "#31115"
+msgid "Toggle subtitle"
+msgstr ""
 
 msgctxt "#31116"
 msgid "Remove this main menu item"
@@ -416,9 +481,21 @@ msgctxt "#31131"
 msgid "Choose skin fanart pack"
 msgstr "เลือกแพ็คแฟนอาร์ตของหน้าตา"
 
+msgctxt "#31132"
+msgid "Select Program"
+msgstr ""
+
+msgctxt "#31133"
+msgid "Select Resolution"
+msgstr ""
+
 msgctxt "#31134"
 msgid "Remaining"
 msgstr "ที่เหลืออยู่"
+
+msgctxt "#31135"
+msgid "Binary"
+msgstr ""
 
 msgctxt "#31136"
 msgid "Click here to see latest changes..."
@@ -460,6 +537,14 @@ msgctxt "#31145"
 msgid "Search add-ons"
 msgstr "ค้นหาส่วนเสริม"
 
+msgctxt "#31146"
+msgid "In cinemas"
+msgstr ""
+
+msgctxt "#31147"
+msgid "In cinemas soon"
+msgstr ""
+
 msgctxt "#31148"
 msgid "Categories"
 msgstr "หมวดหมู่"
@@ -467,6 +552,10 @@ msgstr "หมวดหมู่"
 msgctxt "#31149"
 msgid "Select genre fanart pack"
 msgstr "เลือกแพ็คแฟนอาร์ตประเภท"
+
+msgctxt "#31150"
+msgid "Origin"
+msgstr ""
 
 msgctxt "#31151"
 msgid "Unwatched music videos"
@@ -482,7 +571,7 @@ msgstr "คุณยังไม่มี ส่วนเสริมประ�
 
 msgctxt "#31154"
 msgid "Press OK to switch between locations"
-msgstr "กด ตกลง  เพื่อสลับสถานที่"
+msgstr "กด ตกลง เพื่อสลับสถานที่"
 
 msgctxt "#31155"
 msgid "No bookmarks created yet."
@@ -512,6 +601,40 @@ msgctxt "#31161"
 msgid "Numeric pad"
 msgstr "แป้นตัวเลข"
 
+msgctxt "#31162"
+msgid "Play your personal games or download one of the many game add-ons from the official repository."
+msgstr ""
+
+msgctxt "#31163"
+msgid "Show Fanart background"
+msgstr ""
+
+#. Choose profile identifier
+msgctxt "#31164"
+msgid "Choose kind of profile identification"
+msgstr ""
+
+#. Label for the kind of profile identification
 msgctxt "#31165"
 msgid "Profile name"
 msgstr "ชื่อ ข้อมูลส่วนตัว"
+
+#. Label for the kind of profile identification
+msgctxt "#31166"
+msgid "Profile avatar"
+msgstr ""
+
+#. Label of a setting
+msgctxt "#31167"
+msgid "Animate background"
+msgstr ""
+
+#. Label of a setting
+msgctxt "#31168"
+msgid "Show posters instead of thumbs for musicvideos"
+msgstr ""
+
+#. Description label for skin settings area
+msgctxt "#31169"
+msgid "Artwork related settings."
+msgstr ""

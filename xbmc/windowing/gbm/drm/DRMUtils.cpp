@@ -10,6 +10,7 @@
 
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
+#include "utils/DRMHelpers.h"
 #include "utils/StringUtils.h"
 #include "utils/log.h"
 #include "windowing/GraphicContext.h"
@@ -103,7 +104,8 @@ drm_fb * CDRMUtils::DrmFbGetFromBo(struct gbm_bo *bo)
   if (modifiers[0] && modifiers[0] != DRM_FORMAT_MOD_INVALID)
   {
     flags |= DRM_MODE_FB_MODIFIERS;
-    CLog::Log(LOGDEBUG, "CDRMUtils::{} - using modifier: {:#x}", __FUNCTION__, modifiers[0]);
+    CLog::Log(LOGDEBUG, "CDRMUtils::{} - using modifier: {}", __FUNCTION__,
+              DRMHELPERS::ModifierToString(modifiers[0]));
   }
 
   int ret = drmModeAddFB2WithModifiers(m_fd,
@@ -203,7 +205,8 @@ bool CDRMUtils::FindPlanes()
           {
             return (plane->GetPlaneId() != videoPlaneId &&
                     (videoPlaneId == 0 || plane->SupportsFormat(DRM_FORMAT_ARGB8888)) &&
-                    plane->SupportsFormat(DRM_FORMAT_XRGB8888));
+                    (plane->SupportsFormat(DRM_FORMAT_XRGB2101010) ||
+                     plane->SupportsFormat(DRM_FORMAT_XRGB8888)));
           }
           return false;
         });
@@ -234,8 +237,19 @@ bool CDRMUtils::FindPlanes()
     CLog::Log(LOGDEBUG, "CDRMUtils::{} - using video plane {}", __FUNCTION__,
               m_video_plane->GetPlaneId());
 
-  CLog::Log(LOGDEBUG, "CDRMUtils::{} - using gui plane {}", __FUNCTION__,
-            m_gui_plane->GetPlaneId());
+  // assume we prefer direct-to-plane rendering support over 10bit gui support for now.
+  if (m_gui_plane->SupportsFormat(DRM_FORMAT_XRGB2101010))
+  {
+    m_gui_plane->SetFormat(DRM_FORMAT_XRGB2101010);
+    CLog::Log(LOGDEBUG, "CDRMUtils::{} - using 10bit gui plane {}", __FUNCTION__,
+              m_gui_plane->GetPlaneId());
+  }
+  else
+  {
+    m_gui_plane->SetFormat(DRM_FORMAT_XRGB8888);
+    CLog::Log(LOGDEBUG, "CDRMUtils::{} - using gui plane {}", __FUNCTION__,
+              m_gui_plane->GetPlaneId());
+  }
 
   return true;
 }
@@ -491,9 +505,40 @@ bool CDRMUtils::InitDrm()
 
 bool CDRMUtils::FindConnector()
 {
-  auto connector = std::find_if(m_connectors.begin(), m_connectors.end(), [](auto& connector) {
-    return connector->GetEncoderId() > 0 && connector->IsConnected();
-  });
+  auto settingsComponent = CServiceBroker::GetSettingsComponent();
+  if (!settingsComponent)
+    return false;
+
+  auto settings = settingsComponent->GetSettings();
+  if (!settings)
+    return false;
+
+  std::vector<std::unique_ptr<CDRMConnector>>::iterator connector;
+
+  std::string connectorName = settings->GetString(CSettings::SETTING_VIDEOSCREEN_MONITOR);
+  if (connectorName != "Default")
+  {
+    connector = std::find_if(m_connectors.begin(), m_connectors.end(),
+                             [&connectorName](auto& connector)
+                             {
+                               return connector->GetEncoderId() > 0 && connector->IsConnected() &&
+                                      connector->GetName() == connectorName;
+                             });
+  }
+
+  if (connector == m_connectors.end())
+  {
+    CLog::Log(LOGDEBUG, "CDRMUtils::{} - failed to find specified connector: {}, trying default",
+              __FUNCTION__, connectorName);
+    connectorName = "Default";
+  }
+
+  if (connectorName == "Default")
+  {
+    connector = std::find_if(m_connectors.begin(), m_connectors.end(),
+                             [](auto& connector)
+                             { return connector->GetEncoderId() > 0 && connector->IsConnected(); });
+  }
 
   if (connector == m_connectors.end())
   {
@@ -502,7 +547,7 @@ bool CDRMUtils::FindConnector()
   }
 
   CLog::Log(LOGINFO, "CDRMUtils::{} - using connector: {}", __FUNCTION__,
-            *connector->get()->GetConnectorId());
+            connector->get()->GetName());
 
   m_connector = connector->get();
   return true;
@@ -679,15 +724,4 @@ uint32_t CDRMUtils::FourCCWithAlpha(uint32_t fourcc)
 uint32_t CDRMUtils::FourCCWithoutAlpha(uint32_t fourcc)
 {
   return (fourcc & 0xFFFFFF00) | static_cast<uint32_t>('X');
-}
-
-std::string CDRMUtils::FourCCToString(uint32_t fourcc)
-{
-  std::stringstream ss;
-  ss << static_cast<char>((fourcc & 0x000000FF));
-  ss << static_cast<char>((fourcc & 0x0000FF00) >> 8);
-  ss << static_cast<char>((fourcc & 0x00FF0000) >> 16);
-  ss << static_cast<char>((fourcc & 0xFF000000) >> 24);
-
-  return ss.str();
 }

@@ -20,10 +20,10 @@ DEPLOYED_BINARY_ADDONS="-e /addons"
 #$XBMC_PLATFORM_DIR matches the platform subdirs!
 case $XBMC_PLATFORM_DIR in
   ios)
-    DEFAULT_SDK_VERSION=12.2
+    DEFAULT_SDK_VERSION=13.2
     DEFAULT_XBMC_DEPENDS_ROOT=$WORKSPACE/tools/depends/xbmc-depends
     DEFAULT_CONFIGURATION="Debug"
-    DEFAULT_XCODE_APP="Xcode10.2.app"
+    DEFAULT_XCODE_APP="Xcode11.3.1.app"
     ;;
 
   tvos)
@@ -34,14 +34,21 @@ case $XBMC_PLATFORM_DIR in
     ;;
 
   osx64)
-    DEFAULT_SDK_VERSION=10.14
+    DEFAULT_SDK_VERSION=10.15
     DEFAULT_XBMC_DEPENDS_ROOT=$WORKSPACE/tools/depends/xbmc-depends
     DEFAULT_CONFIGURATION="Debug"
-    DEFAULT_XCODE_APP="Xcode10.2.app"
+    DEFAULT_XCODE_APP="Xcode11.3.1.app"
+    ;;
+
+  osx-arm64)
+    DEFAULT_SDK_VERSION=11.3
+    DEFAULT_XBMC_DEPENDS_ROOT=$WORKSPACE/tools/depends/xbmc-depends
+    DEFAULT_CONFIGURATION="Debug"
+    DEFAULT_XCODE_APP="Xcode12.5.1.app"
     ;;
 
   android)
-    DEFAULT_NDK_VERSION="20" # NDK package version (newer API can be inside)
+    DEFAULT_NDK_VERSION="21e" # NDK package version (newer API can be inside)
     DEFAULT_NDK_API="21" # Lollipop API level (21) defined in package ./sysroot/usr/include/android/api-level.h
     DEFAULT_XBMC_DEPENDS_ROOT=$WORKSPACE/tools/depends/xbmc-depends
     DEFAULT_CONFIGURATION="Debug"

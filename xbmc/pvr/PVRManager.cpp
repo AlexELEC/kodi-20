@@ -44,11 +44,24 @@
 
 using namespace PVR;
 using namespace KODI::MESSAGING;
+using namespace std::chrono_literals;
 
-namespace PVR
+namespace
 {
+
+class CPVRJob
+{
+public:
+  virtual ~CPVRJob() = default;
+
+  virtual bool DoWork() = 0;
+  virtual const std::string GetType() const = 0;
+
+protected:
+};
+
 template<typename F>
-class CPVRLambdaJob : public CJob
+class CPVRLambdaJob : public CPVRJob
 {
 public:
   CPVRLambdaJob() = delete;
@@ -60,15 +73,17 @@ public:
     return true;
   }
 
-  const char* GetType() const override
-  {
-    return m_type.c_str();
-  }
+  const std::string GetType() const override { return m_type; }
 
 private:
   std::string m_type;
   F m_f;
 };
+
+} // unnamed namespace
+
+namespace PVR
+{
 
 class CPVRManagerJobQueue
 {
@@ -89,18 +104,19 @@ public:
 
   bool WaitForJobs(unsigned int milliSeconds)
   {
-    return m_triggerEvent.WaitMSec(milliSeconds);
+    return m_triggerEvent.Wait(std::chrono::milliseconds(milliSeconds));
   }
 
 
 private:
-  void AppendJob(CJob* job);
+  void AppendJob(CPVRJob* job);
 
   CCriticalSection m_critSection;
   CEvent m_triggerEvent;
-  std::vector<CJob*> m_pendingUpdates;
+  std::vector<CPVRJob*> m_pendingUpdates;
   bool m_bStopped = true;
 };
+
 } // namespace PVR
 
 void CPVRManagerJobQueue::Start()
@@ -120,21 +136,21 @@ void CPVRManagerJobQueue::Stop()
 void CPVRManagerJobQueue::Clear()
 {
   CSingleLock lock(m_critSection);
-  for (CJob* updateJob : m_pendingUpdates)
+  for (CPVRJob* updateJob : m_pendingUpdates)
     delete updateJob;
 
   m_pendingUpdates.clear();
   m_triggerEvent.Set();
 }
 
-void CPVRManagerJobQueue::AppendJob(CJob* job)
+void CPVRManagerJobQueue::AppendJob(CPVRJob* job)
 {
   CSingleLock lock(m_critSection);
 
   // check for another pending job of given type...
-  for (CJob* updateJob : m_pendingUpdates)
+  for (CPVRJob* updateJob : m_pendingUpdates)
   {
-    if (!strcmp(updateJob->GetType(), job->GetType()))
+    if (updateJob->GetType() == job->GetType())
     {
       delete job;
       return;
@@ -147,7 +163,7 @@ void CPVRManagerJobQueue::AppendJob(CJob* job)
 
 void CPVRManagerJobQueue::ExecutePendingJobs()
 {
-  std::vector<CJob*> pendingUpdates;
+  std::vector<CPVRJob*> pendingUpdates;
 
   {
     CSingleLock lock(m_critSection);
@@ -159,7 +175,7 @@ void CPVRManagerJobQueue::ExecutePendingJobs()
     m_triggerEvent.Reset();
   }
 
-  CJob* job = nullptr;
+  CPVRJob* job = nullptr;
   while (!pendingUpdates.empty())
   {
     job = pendingUpdates.front();
@@ -485,7 +501,7 @@ void CPVRManager::Process()
   while (!LoadComponents(progressHandler) && IsInitialising())
   {
     CLog::Log(LOGWARNING, "PVR Manager failed to load data, retrying");
-    CThread::Sleep(1000);
+    CThread::Sleep(1000ms);
 
     if (progressHandler && progressTimeout.IsTimePast())
     {
@@ -613,6 +629,9 @@ void CPVRManager::OnWake()
   /* start job to search for missing channel icons */
   TriggerSearchMissingChannelIcons();
 
+  /* try to play channel on startup */
+  TriggerPlayChannelOnStartup();
+
   /* trigger PVR data updates */
   TriggerChannelGroupsUpdate();
   TriggerChannelsUpdate();
@@ -625,7 +644,7 @@ bool CPVRManager::LoadComponents(CPVRGUIProgressHandler* progressHandler)
 {
   /* load at least one client */
   while (IsInitialising() && m_addons && !m_addons->HasCreatedClients())
-    CThread::Sleep(50);
+    CThread::Sleep(50ms);
 
   if (!IsInitialising() || !m_addons->HasCreatedClients())
     return false;
@@ -807,26 +826,22 @@ void CPVRManager::TriggerChannelGroupsUpdate()
 
 void CPVRManager::TriggerSearchMissingChannelIcons()
 {
-  if (IsStarted())
-  {
-    CJobManager::GetInstance().Submit([this] {
-      CPVRGUIChannelIconUpdater updater({ChannelGroups()->GetGroupAllTV(), ChannelGroups()->GetGroupAllRadio()}, true);
-      updater.SearchAndUpdateMissingChannelIcons();
-      return true;
-    });
-  }
+  m_pendingUpdates->Append("pvr-search-missing-channel-icons", [this]() {
+    CPVRGUIChannelIconUpdater updater(
+        {ChannelGroups()->GetGroupAllTV(), ChannelGroups()->GetGroupAllRadio()}, true);
+    updater.SearchAndUpdateMissingChannelIcons();
+    return true;
+  });
 }
 
 void CPVRManager::TriggerSearchMissingChannelIcons(const std::shared_ptr<CPVRChannelGroup>& group)
 {
-  if (IsStarted())
-  {
-    CJobManager::GetInstance().Submit([group] {
-      CPVRGUIChannelIconUpdater updater({group}, false);
-      updater.SearchAndUpdateMissingChannelIcons();
-      return true;
-    });
-  }
+  m_pendingUpdates->Append("pvr-search-missing-channel-icons-" + std::to_string(group->GroupID()),
+                           [group]() {
+                             CPVRGUIChannelIconUpdater updater({group}, false);
+                             updater.SearchAndUpdateMissingChannelIcons();
+                             return true;
+                           });
 }
 
 void CPVRManager::ConnectionStateChange(CPVRClient* client,
@@ -836,6 +851,10 @@ void CPVRManager::ConnectionStateChange(CPVRClient* client,
 {
   CJobManager::GetInstance().Submit([this, client, connectString, state, message] {
     Clients()->ConnectionStateChange(client, connectString, state, message);
+
+    if (state == PVR_CONNECTION_STATE_CONNECTED)
+      Start(); // start over
+
     return true;
   });
 }

@@ -502,8 +502,12 @@ bool XBPython::OnScriptInitialized(ILanguageInvoker* invoker)
     CEnvironment::putenv(buf);
     buf = "PYTHONOPTIMIZE=1";
     CEnvironment::putenv(buf);
-    buf = "OS=win32";
-    CEnvironment::putenv(buf);
+
+#ifdef TARGET_WINDOWS_STORE
+    CEnvironment::putenv("OS=win10");
+#else
+    CEnvironment::putenv("OS=win32");
+#endif
 
     std::wstring pythonHomeW;
     CCharsetConverter::utf8ToW(CSpecialProtocol::TranslatePath("special://xbmc/system/python"),
@@ -622,7 +626,7 @@ bool XBPython::WaitForEvent(CEvent& hEvent, unsigned int milliseconds)
 {
   // wait for either this event our our global event
   XbmcThreads::CEventGroup eventGroup{&hEvent, &m_globalEvent};
-  CEvent* ret = eventGroup.wait(milliseconds);
+  CEvent* ret = eventGroup.wait(std::chrono::milliseconds(milliseconds));
   if (ret)
     m_globalEvent.Reset();
   return ret != NULL;

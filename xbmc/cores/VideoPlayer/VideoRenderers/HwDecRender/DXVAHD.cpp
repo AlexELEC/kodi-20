@@ -205,20 +205,30 @@ bool CProcessorHD::InitProcessor()
     }
   }
 
-  // Check if HLG color space conversion is supported by driver
   ComPtr<ID3D11VideoProcessorEnumerator1> pEnumerator1;
 
   if (SUCCEEDED(m_pEnumerator.As(&pEnumerator1)))
   {
     DXGI_FORMAT format = DX::Windowing()->GetBackBuffer().GetFormat();
     BOOL supported = 0;
-    HRESULT hr = pEnumerator1->CheckVideoProcessorFormatConversion(
+    HRESULT hr;
+
+    // Check if HLG color space conversion is supported by driver
+    hr = pEnumerator1->CheckVideoProcessorFormatConversion(
         DXGI_FORMAT_P010, DXGI_COLOR_SPACE_YCBCR_STUDIO_GHLG_TOPLEFT_P2020, format,
         DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709, &supported);
     m_bSupportHLG = SUCCEEDED(hr) && !!supported;
+
+    // Check if HDR10 RGB limited range output is supported by driver
+    hr = pEnumerator1->CheckVideoProcessorFormatConversion(
+        DXGI_FORMAT_P010, DXGI_COLOR_SPACE_YCBCR_STUDIO_G2084_LEFT_P2020, format,
+        DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020, &supported);
+    m_bSupportHDR10Limited = SUCCEEDED(hr) && !!supported;
   }
 
   CLog::LogF(LOGDEBUG, "HLG color space conversion is{}supported.", m_bSupportHLG ? " " : " NOT ");
+  CLog::LogF(LOGDEBUG, "HDR10 RGB limited range output is{}supported.",
+             m_bSupportHDR10Limited ? " " : " NOT ");
 
   return true;
 }
@@ -410,7 +420,7 @@ DXGI_COLOR_SPACE_TYPE CProcessorHD::GetDXGIColorSpaceSource(CRenderBuffer* view,
   return DXGI_COLOR_SPACE_YCBCR_STUDIO_G22_LEFT_P709;
 }
 
-DXGI_COLOR_SPACE_TYPE CProcessorHD::GetDXGIColorSpaceTarget(CRenderBuffer* view)
+DXGI_COLOR_SPACE_TYPE CProcessorHD::GetDXGIColorSpaceTarget(CRenderBuffer* view, bool supportHDR)
 {
   DXGI_COLOR_SPACE_TYPE color;
 
@@ -424,8 +434,16 @@ DXGI_COLOR_SPACE_TYPE CProcessorHD::GetDXGIColorSpaceTarget(CRenderBuffer* view)
   if (view->primaries == AVCOL_PRI_BT2020 && (view->color_transfer == AVCOL_TRC_SMPTE2084 ||
                                               view->color_transfer == AVCOL_TRC_ARIB_STD_B67))
   {
-    color = DX::Windowing()->UseLimitedColor() ? DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020
-                                               : DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+    if (supportHDR)
+    {
+      color = DX::Windowing()->UseLimitedColor() ? DXGI_COLOR_SPACE_RGB_STUDIO_G2084_NONE_P2020
+                                                 : DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+    }
+    else
+    {
+      color = DX::Windowing()->UseLimitedColor() ? DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P2020
+                                                 : DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P2020;
+    }
   }
 
   return color;
@@ -442,8 +460,10 @@ bool CProcessorHD::Render(CRect src, CRect dst, ID3D11Resource* target, CRenderB
   if (!views[2])
     return false;
 
-  RECT sourceRECT = { src.x1, src.y1, src.x2, src.y2 };
-  RECT dstRECT    = { dst.x1, dst.y1, dst.x2, dst.y2 };
+  RECT sourceRECT = {static_cast<LONG>(src.x1), static_cast<LONG>(src.y1),
+                     static_cast<LONG>(src.x2), static_cast<LONG>(src.y2)};
+  RECT dstRECT = {static_cast<LONG>(dst.x1), static_cast<LONG>(dst.y1), static_cast<LONG>(dst.x2),
+                  static_cast<LONG>(dst.y2)};
 
   D3D11_VIDEO_FRAME_FORMAT dxvaFrameFormat = D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE;
 
@@ -538,9 +558,12 @@ bool CProcessorHD::Render(CRect src, CRect dst, ID3D11Resource* target, CRenderB
   ComPtr<ID3D11VideoContext1> videoCtx1;
   if (SUCCEEDED(m_pVideoContext.As(&videoCtx1)))
   {
+    bool supportHDR = DX::Windowing()->IsHDROutput() &&
+                      (m_bSupportHDR10Limited || !DX::Windowing()->UseLimitedColor());
+
     const DXGI_COLOR_SPACE_TYPE sourceColor =
-        GetDXGIColorSpaceSource(views[2], DX::Windowing()->IsHDROutput(), m_bSupportHLG);
-    const DXGI_COLOR_SPACE_TYPE targetColor = GetDXGIColorSpaceTarget(views[2]);
+        GetDXGIColorSpaceSource(views[2], supportHDR, m_bSupportHLG);
+    const DXGI_COLOR_SPACE_TYPE targetColor = GetDXGIColorSpaceTarget(views[2], supportHDR);
 
     videoCtx1->VideoProcessorSetStreamColorSpace1(m_pVideoProcessor.Get(), DEFAULT_STREAM_INDEX,
                                                   sourceColor);
@@ -552,14 +575,16 @@ bool CProcessorHD::Render(CRect src, CRect dst, ID3D11Resource* target, CRenderB
   {
     // input colorspace
     bool isBT601 = views[2]->color_space == AVCOL_SPC_BT470BG || views[2]->color_space == AVCOL_SPC_SMPTE170M;
+    // clang-format off
     D3D11_VIDEO_PROCESSOR_COLOR_SPACE colorSpace
     {
-      0,                            // 0 - Playback, 1 - Processing
-      views[2]->full_range ? 0 : 1, // 0 - Full (0-255), 1 - Limited (16-235) (RGB)
-      isBT601 ? 1 : 0,              // 0 - BT.601, 1 - BT.709
-      0,                            // 0 - Conventional YCbCr, 1 - xvYCC
-      views[2]->full_range ? 2 : 1  // 0 - driver defaults, 2 - Full range [0-255], 1 - Studio range [16-235] (YUV)
+      0u,                             // 0 - Playback, 1 - Processing
+      views[2]->full_range ? 0u : 1u, // 0 - Full (0-255), 1 - Limited (16-235) (RGB)
+      isBT601 ? 1u : 0u,              // 0 - BT.601, 1 - BT.709
+      0u,                             // 0 - Conventional YCbCr, 1 - xvYCC
+      views[2]->full_range ? 2u : 1u  // 0 - driver defaults, 2 - Full range [0-255], 1 - Studio range [16-235] (YUV)
     };
+    // clang-format on
     m_pVideoContext->VideoProcessorSetStreamColorSpace(m_pVideoProcessor.Get(), DEFAULT_STREAM_INDEX, &colorSpace);
     // Output color space
     // don't apply any color range conversion, this will be fixed at later stage.

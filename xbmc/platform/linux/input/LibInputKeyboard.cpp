@@ -222,8 +222,7 @@ void CLibInputKeyboard::ProcessKey(libinput_event_keyboard *e)
   if (!m_ctx || !m_keymap || !m_state)
     return;
 
-  XBMC_Event event;
-  memset(&event, 0, sizeof(event));
+  XBMC_Event event = {};
 
   const uint32_t xkbkey = libinput_event_keyboard_get_key(e) + 8;
   const bool pressed = libinput_event_keyboard_get_key_state(e) == LIBINPUT_KEY_STATE_PRESSED;
@@ -307,7 +306,7 @@ void CLibInputKeyboard::ProcessKey(libinput_event_keyboard *e)
       m_repeatRate = data->second.at(1);
       m_repeatTimer.Stop(true);
       m_repeatEvent = event;
-      m_repeatTimer.Start(data->second.at(0), false);
+      m_repeatTimer.Start(std::chrono::milliseconds(data->second.at(0)), false);
     }
   }
   else
@@ -340,7 +339,7 @@ XBMCKey CLibInputKeyboard::XBMCKeyForKeysym(xkb_keysym_t sym, uint32_t scancode)
 
 void CLibInputKeyboard::KeyRepeatTimeout()
 {
-  m_repeatTimer.RestartAsync(m_repeatRate);
+  m_repeatTimer.RestartAsync(std::chrono::milliseconds(m_repeatRate));
 
   std::shared_ptr<CAppInboundProtocol> appPort = CServiceBroker::GetAppPort();
   if (appPort)

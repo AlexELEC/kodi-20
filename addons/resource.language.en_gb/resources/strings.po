@@ -1452,7 +1452,7 @@ msgstr ""
 #. Setting in international settings
 #: system/settings/settings.xml
 msgctxt "#310"
-msgid "Keyboard layouts"
+msgid "Virtual keyboard layouts"
 msgstr ""
 
 #. Keyboard layout name e.g. "English QWERTY"
@@ -1926,7 +1926,11 @@ msgctxt "#406"
 msgid "Humidity"
 msgstr ""
 
-#empty strings from id 407 to 408
+msgctxt "#407"
+msgid "Hardware keyboard layouts"
+msgstr ""
+
+#empty strings from id 408 to 408
 
 msgctxt "#409"
 msgid "Defaults"
@@ -5618,7 +5622,19 @@ msgctxt "#12022"
 msgid "Resume from {0:s}"
 msgstr ""
 
-#empty strings from id 12023 to 12309
+#empty strings from id 12023 to 12307
+
+#. Label of the show password button in the keyboard dialog
+#: xbmc/dialogs/GUIDialogKeyboardGeneric.cpp
+msgctxt "#12308"
+msgid "Show password"
+msgstr ""
+
+#. Label of the hide password button in the keyboard dialog
+#: xbmc/dialogs/GUIDialogKeyboardGeneric.cpp
+msgctxt "#12309"
+msgid "Hide password"
+msgstr ""
 
 #: addons/skin.estuary/xml/DialogNumeric.xml
 #: addons/skin.estouchy/xml/DialogNumeric.xml
@@ -7050,6 +7066,8 @@ msgctxt "#13415"
 msgid "Render method"
 msgstr ""
 
+#. Value for setting with label #13415 "Player / Videos / Render method"
+#. Value for setting with label #36098 "System / Display / Use 10 bit for SDR"
 #: system/settings/settings.xml
 #: xbmc/cores/VideoPlayer/VideoRenderers/BaseRenderer.cpp
 msgctxt "#13416"
@@ -13380,7 +13398,6 @@ msgstr ""
 #: xbmc/dialogs/GUIDialogMediaFilter.cpp
 #: xbmc/playlists/SmartPlaylist.cpp
 #: addons/skin.estuary/xml/Variables.xml
-#: addons/skin.estuary/xml/DialogVideoInfo.xml
 msgctxt "#20416"
 msgid "First aired"
 msgstr ""
@@ -13404,7 +13421,8 @@ msgctxt "#20419"
 msgid "Replace file names with library titles"
 msgstr ""
 
-#. Settings -> PVR -> Playback -> Switch to fullscreen value
+#. Value for setting with label #19171 "PVR & Live TV / Playback / Switch to full screen"
+#. Value for setting with label #36098 "System / Display / Use 10 bit for SDR"
 #: system/settings/settings.xml
 msgctxt "#20420"
 msgid "Never"
@@ -13415,6 +13433,8 @@ msgctxt "#20421"
 msgid "If only one season"
 msgstr ""
 
+#. Value for setting with label #170 "Player / Videos / Adjust display refresh rate"
+#. Value for setting with label #36098 "System / Display / Use 10 bit for SDR"
 #: system/settings/settings.xml
 msgctxt "#20422"
 msgid "Always"
@@ -13668,7 +13688,12 @@ msgctxt "#20472"
 msgid "Show all performers for music videos"
 msgstr ""
 
-#empty strings from id 20473 to 21329
+#: addons/skin.estuary/xml/Variables.xml
+msgctxt "#20473"
+msgid "Premiered"
+msgstr ""
+
+#empty strings from id 20474 to 21329
 #up to 21329 is reserved for the video db !! !
 
 #: system/settings/settings.xml
@@ -16082,7 +16107,7 @@ msgstr ""
 #: addons/skin.estuary/xml/DialogPVRRadioRDSInfo.xml
 #: addons/skin.estuary/xml/Variables.xml
 msgctxt "#29900"
-msgid "Radiotext Plus info"
+msgid "RadioText Plus info"
 msgstr ""
 
 #. Music band name which make the song (if present)
@@ -18400,7 +18425,13 @@ msgctxt "#36050"
 msgid "On start"
 msgstr ""
 
-#empty strings from id 36051 to 36098
+#empty strings from id 36051 to 36097
+
+#. Label of setting "System / Display / Use 10 bit for SDR"
+#: system/settings/settings.xml
+msgctxt "#36098"
+msgid "Use 10 bit for SDR"
+msgstr ""
 
 #: system/settings/settings.xml
 msgctxt "#36099"
@@ -19454,7 +19485,7 @@ msgstr ""
 #. Description of setting with label #227 "Load audio CD information from online service"
 #: system/settings/settings.xml
 msgctxt "#36284"
-msgid "Read the information belonging to an audio CD, like song title and artist, from the Internet database freedb.org."
+msgid "Read the information belonging to an audio CD, like song title and artist, from the Internet database gnudb.org."
 msgstr ""
 
 #. Description of setting label #20000 "Saved music folder"
@@ -20313,7 +20344,9 @@ msgctxt "#36431"
 msgid "Shows all events in the event log for the current profile with options to only show specific levels."
 msgstr ""
 
-#. Description for setting #310: "Keyboard layouts"
+#. Description for setting #310: "Virtual keyboard layouts"
+#. Setting in Interface -> Regional -> Virtual keyboard layouts
+#. Select the layout of a virtual keyboard
 #: system/settings/settings.xml
 msgctxt "#36432"
 msgid "Select virtual keyboard layouts."
@@ -20332,10 +20365,13 @@ msgstr ""
 
 #empty string with id 36435
 
-#. Description for setting #310: "Keyboard layouts"
-#: system/settings/settings.xml
+#. Description for setting #407: "Hardware keyboard layouts"
+#. Setting in System -> Input -> Hardware keyboard layouts
+#. Select the layout of a physically attached keyboard
+#: system/settings/linux.xml
+#: system/settings/freebsd.xml
 msgctxt "#36436"
-msgid "Select OS keyboard layout."
+msgid "Select hardware keyboard layout."
 msgstr ""
 
 #. Option for setting "System -> Add-ons -> Update official add-ons from"
@@ -20782,7 +20818,11 @@ msgctxt "#36577"
 msgid "Specify the resolution for the 3D lookup table. Use a lower resolution for quick preview and higher resolution for more accurate picture. Using a high resolution may take seconds to prepare when parameters are changed or a new video is started."
 msgstr ""
 
-#empty string with id 36578
+#. Description of setting "System / Display / Use 10 bit for SDR" with label #36098
+#: system/settings/settings.xml
+msgctxt "#36578"
+msgid "Improves video quality by using 10-bit video surfaces for Standard Dynamic Range (SDR) video.[CR][Auto detect] Enables 10 bit for SDR only if the connected display supports HDR.[CR][Always] Enables 10 bit for SDR even if the connected display doesn't support HDR.[CR][Never] Do not use 10 bit for SDR.[CR]HDR passthrough mode always uses 10-bit regardless of this setting."
+msgstr ""
 
 #. primaries labels
 #: xbmc/video/dialogs/GUIDialogVideoSettings.cpp
@@ -21413,7 +21453,30 @@ msgctxt "#37046"
 msgid "1080"
 msgstr ""
 
-#empty strings from id 37047 to 38010
+#: system/settings/settings.xml
+msgctxt "#37047"
+msgid "WS-Discovery"
+msgstr ""
+
+#. Setting #37048 Enable WS-Discovery Service"
+#: system/settings/settings.xml
+msgctxt "#37048"
+msgid "Enable WS-Discovery Service"
+msgstr ""
+
+#. Description of setting #37048 Enable WS-Discovery Service"
+#: system/settings/settings.xml
+msgctxt "#37049"
+msgid "Enable service to search for SMB services using the WS-Discovery protocol"
+msgstr ""
+
+#. Label for component level debug logging setting
+#: xbmc/settings/AdvancedSettings.cpp
+msgctxt "#37050"
+msgid "Verbose logging for the [B]WS-Discovery[/B] component"
+msgstr ""
+
+#empty strings from id 37051 to 38010
 
 #. Setting #38011 "Show All Items entry"
 #: system/settings/settings.xml

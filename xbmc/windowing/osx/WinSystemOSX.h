@@ -9,6 +9,7 @@
 #pragma once
 
 #include "threads/CriticalSection.h"
+#include "threads/SystemClock.h"
 #include "threads/Timer.h"
 #include "windowing/WinSystem.h"
 
@@ -58,6 +59,8 @@ public:
 
   std::unique_ptr<CVideoSync> GetVideoSync(void* clock) override;
 
+  std::vector<std::string> GetConnectedOutputs() override;
+
   void        WindowChangedScreen();
 
   void        AnnounceOnLostDevice();
@@ -72,7 +75,6 @@ public:
 #else
   void* GetNSOpenGLContext();
 #endif
-  void GetConnectedOutputs(std::vector<std::string> *outputs);
 
   // winevents override
   bool MessagePump() override;

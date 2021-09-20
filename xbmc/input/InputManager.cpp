@@ -273,7 +273,7 @@ bool CInputManager::ProcessEventServer(int windowId, float frameTime)
     CPoint pos;
     if (es->GetMousePos(pos.x, pos.y) && m_Mouse.IsEnabled())
     {
-      XBMC_Event newEvent;
+      XBMC_Event newEvent = {};
       newEvent.type = XBMC_MOUSEMOTION;
       newEvent.motion.x = (uint16_t)pos.x;
       newEvent.motion.y = (uint16_t)pos.y;
@@ -646,8 +646,8 @@ bool CInputManager::HandleKey(const CKey& key)
       action = m_buttonTranslator->GetAction(iWin, key);
   }
   if (!key.IsAnalogButton())
-    CLog::LogF(LOGDEBUG, "{} pressed, action is {}",
-               m_Keyboard.GetKeyName((int)key.GetButtonCode()), action.GetName());
+    CLog::LogF(LOGDEBUG, "{} pressed, window {}, action is {}",
+               m_Keyboard.GetKeyName((int)key.GetButtonCode()), iWin, action.GetName());
 
   return ExecuteInputAction(action);
 }
@@ -682,7 +682,9 @@ bool CInputManager::AlwaysProcess(const CAction& action)
     if (builtInFunction == "powerdown" || builtInFunction == "reboot" ||
         builtInFunction == "restart" || builtInFunction == "restartapp" ||
         builtInFunction == "suspend" || builtInFunction == "hibernate" ||
-        builtInFunction == "quit" || builtInFunction == "shutdown")
+        builtInFunction == "quit" || builtInFunction == "shutdown" ||
+        builtInFunction == "volumeup" || builtInFunction == "volumedown" ||
+        builtInFunction == "mute")
     {
       return true;
     }

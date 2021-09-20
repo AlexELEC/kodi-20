@@ -1,7 +1,7 @@
 ![Kodi Logo](resources/banner_slim.png)
 
 # macOS build guide
-This guide has been tested with macOS 10.13.4()17E199 High Sierra and Xcode 9.3(9E145). It is meant to build Kodi for macOS using **[Kodi's unified depends build system](../tools/depends/README.md)**. Please read it in full before you proceed to familiarize yourself with the build procedure.
+This guide has been tested using Xcode 11.3.1 running on MacOS 10.14.4 (Mojave). Please note this combination is the only version our CI system builds. The minimum OS requirement for this version of Xcode is MacOS 10.14.4. Other combinations may work but we provide no assurances that other combinations will build correctly and run identically to Team Kodi releases. It is meant to build Kodi for macOS using **[Kodi's unified depends build system](../tools/depends/README.md)**. Please read it in full before you proceed to familiarize yourself with the build procedure.
 
 ## Table of Contents
 1. **[Document conventions](#1-document-conventions)**
@@ -83,11 +83,18 @@ Kodi can be built as either a 32bit or 64bit program. The dependencies are built
 **TIP:** Look for comments starting with `Or ...` and only execute the command(s) you need.
 **NOTE:** `--with-platform` is mandatory for all Apple platforms
 
-Configure build:
+Configure build (x86 intel):
 ```
 cd $HOME/kodi/tools/depends
 ./bootstrap
 ./configure --host=x86_64-apple-darwin --with-platform=macos
+```
+
+Configure build (apple silicon):
+```
+cd $HOME/kodi/tools/depends
+./bootstrap
+./configure --host=aarch64-apple-darwin --with-platform=macos
 ```
 
 Build tools and dependencies:
@@ -161,7 +168,7 @@ Change to build directory:
 cd $HOME/kodi-build
 ```
 
-Generate Xcode project:
+Generate Xcode project (x86_64 intel):
 ```
 /Users/Shared/xbmc-depends/x86_64-darwin17.5.0-native/bin/cmake -G Xcode -DCMAKE_TOOLCHAIN_FILE=/Users/Shared/xbmc-depends/macosx10.13_x86_64-target-debug/share/Toolchain.cmake ../kodi
 ```

@@ -270,7 +270,7 @@ void CAdvancedSettings::Initialize()
   m_bShoutcastArt = true;
 
   m_musicThumbs = "folder.jpg|Folder.jpg|folder.JPG|Folder.JPG|cover.jpg|Cover.jpg|cover.jpeg|thumb.jpg|Thumb.jpg|thumb.JPG|Thumb.JPG";
-  m_musicArtistExtraArt = { };
+  m_musicArtistExtraArt = {};
   m_musicAlbumExtraArt = {};
 
   m_bMusicLibraryAllItemsOnBottom = false;
@@ -352,14 +352,12 @@ void CAdvancedSettings::Initialize()
 #endif
   m_showExitButton = true;
   m_splashImage = true;
-  m_showAllDependencies = false;
 
   m_playlistRetries = 100;
   m_playlistTimeout = 20; // 20 seconds timeout
   m_GLRectangleHack = false;
   m_iSkipLoopFilter = 0;
   m_bVirtualShares = true;
-  m_bTry10bitOutput = false;
 
   m_cpuTempCmd = "";
   m_gpuTempCmd = "";
@@ -910,7 +908,6 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
   XMLUtils::GetBoolean(pRootElement, "fullscreen", m_startFullScreen);
 #endif
   XMLUtils::GetBoolean(pRootElement, "splash", m_splashImage);
-  XMLUtils::GetBoolean(pRootElement, "showalldependencies", m_showAllDependencies);
   XMLUtils::GetBoolean(pRootElement, "showexitbutton", m_showExitButton);
   XMLUtils::GetBoolean(pRootElement, "canwindowed", m_canWindowed);
 
@@ -923,7 +920,6 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
 
   XMLUtils::GetBoolean(pRootElement,"virtualshares", m_bVirtualShares);
   XMLUtils::GetUInt(pRootElement, "packagefoldersize", m_addonPackageFolderSize);
-  XMLUtils::GetBoolean(pRootElement, "try10bitoutput", m_bTry10bitOutput);
 
   // EPG
   pElement = pRootElement->FirstChildElement("epg");

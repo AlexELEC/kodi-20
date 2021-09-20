@@ -132,12 +132,12 @@ static bool IsSupportedHwFormat(const enum AVPixelFormat fmt)
   bool hw = CServiceBroker::GetSettingsComponent()->GetSettings()->GetBool(
       SETTING_VIDEOPLAYER_USEPRIMEDECODERFORHW);
 
-  return fmt == AV_PIX_FMT_DRM_PRIME && hw;
+  return (fmt == AV_PIX_FMT_DRM_PRIME || fmt == AV_PIX_FMT_VAAPI) && hw;
 }
 
 static bool IsSupportedSwFormat(const enum AVPixelFormat fmt)
 {
-  return fmt == AV_PIX_FMT_YUV420P || fmt == AV_PIX_FMT_YUVJ420P;
+  return fmt == AV_PIX_FMT_YUV420P || fmt == AV_PIX_FMT_YUVJ420P || fmt == AV_PIX_FMT_YUV420P10;
 }
 
 static const AVCodecHWConfig* FindHWConfig(const AVCodec* codec)
@@ -153,7 +153,8 @@ static const AVCodecHWConfig* FindHWConfig(const AVCodec* codec)
       continue;
 
     if ((config->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) &&
-        config->device_type == AV_HWDEVICE_TYPE_DRM)
+        (config->device_type == AV_HWDEVICE_TYPE_DRM ||
+         config->device_type == AV_HWDEVICE_TYPE_VAAPI))
       return config;
 
     if ((config->methods & AV_CODEC_HW_CONFIG_METHOD_INTERNAL))
@@ -221,6 +222,9 @@ int CDVDVideoCodecDRMPRIME::GetBuffer(struct AVCodecContext* avctx, AVFrame* fra
       case AV_PIX_FMT_YUVJ420P:
         size = width * height * 3 / 2;
         break;
+      case AV_PIX_FMT_YUV420P10:
+        size = width * height * 3;
+        break;
       default:
         return -1;
     }
@@ -264,8 +268,7 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
   m_hints = hints;
 
   const AVCodecHWConfig* pConfig = FindHWConfig(pCodec);
-  if (pConfig && (pConfig->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX) &&
-      pConfig->device_type == AV_HWDEVICE_TYPE_DRM)
+  if (pConfig && (pConfig->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX))
   {
     const char* device = nullptr;
 
@@ -308,14 +311,20 @@ bool CDVDVideoCodecDRMPRIME::Open(CDVDStreamInfo& hints, CDVDCodecOptions& optio
   m_pCodecContext->opaque = static_cast<void*>(this);
   m_pCodecContext->get_format = GetFormat;
   m_pCodecContext->get_buffer2 = GetBuffer;
+  m_pCodecContext->thread_safe_callbacks = 1;
   m_pCodecContext->codec_tag = hints.codec_tag;
   m_pCodecContext->coded_width = hints.width;
   m_pCodecContext->coded_height = hints.height;
+  m_pCodecContext->level = hints.level;
+  m_pCodecContext->profile = hints.profile;
   m_pCodecContext->bits_per_coded_sample = hints.bitsperpixel;
   m_pCodecContext->time_base.num = 1;
   m_pCodecContext->time_base.den = DVD_TIME_BASE;
   m_pCodecContext->thread_safe_callbacks = 1;
   m_pCodecContext->thread_count = CServiceBroker::GetCPUInfo()->GetCPUCount();
+
+  if (pConfig && pConfig->device_type == AV_HWDEVICE_TYPE_VAAPI)
+    m_pCodecContext->extra_hw_frames = 6;
 
   if (hints.extradata && hints.extrasize > 0)
   {
@@ -518,7 +527,7 @@ void CDVDVideoCodecDRMPRIME::SetPictureParams(VideoPicture* pVideoPicture)
   pVideoPicture->iFlags = 0;
   pVideoPicture->iFlags |= m_pFrame->interlaced_frame ? DVP_FLAG_INTERLACED : 0;
   pVideoPicture->iFlags |= m_pFrame->top_field_first ? DVP_FLAG_TOP_FIELD_FIRST : 0;
-  pVideoPicture->iFlags |= m_pFrame->data[0] ? 0 : DVP_FLAG_DROPPED;
+  pVideoPicture->iFlags |= m_pFrame->buf[0] ? 0 : DVP_FLAG_DROPPED;
 
   if (m_codecControlFlags & DVD_CODEC_CTRL_DROP)
   {

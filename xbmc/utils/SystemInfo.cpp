@@ -88,7 +88,6 @@ using namespace XFILE;
 #ifdef TARGET_WINDOWS_DESKTOP
 static bool sysGetVersionExWByRef(OSVERSIONINFOEXW& osVerInfo)
 {
-  ZeroMemory(&osVerInfo, sizeof(osVerInfo));
   osVerInfo.dwOSVersionInfoSize = sizeof(osVerInfo);
 
   typedef NTSTATUS(__stdcall *RtlGetVersionPtr)(RTL_OSVERSIONINFOEXW* pOsInfo);
@@ -503,7 +502,7 @@ std::string CSysInfo::GetKernelName(bool emptyIfUnknown /*= false*/)
   if (kernelName.empty())
   {
 #if defined(TARGET_WINDOWS_DESKTOP)
-    OSVERSIONINFOEXW osvi;
+    OSVERSIONINFOEXW osvi = {};
     if (sysGetVersionExWByRef(osvi) && osvi.dwPlatformId == VER_PLATFORM_WIN32_NT)
       kernelName = "Windows NT";
 #elif defined(TARGET_WINDOWS_STORE)
@@ -701,6 +700,10 @@ std::string CSysInfo::GetOsPrettyNameWithVersion(void)
       osNameVer.append("10");
       appendWindows10NameVersion(osNameVer);
       break;
+    case WindowsVersionWin11:
+      osNameVer.append("11");
+      appendWindows10NameVersion(osNameVer);
+      break;
     case WindowsVersionFuture:
       osNameVer.append("Unknown future version");
       break;
@@ -874,6 +877,8 @@ CSysInfo::WindowsVersion CSysInfo::GetWindowsVersion()
         m_WinVer = WindowsVersionWin10_1909;
       else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber == 19041)
         m_WinVer = WindowsVersionWin10_2004;
+      else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber >= 22000)
+        m_WinVer = WindowsVersionWin11;
       else if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0 && osvi.dwBuildNumber > 19041)
         m_WinVer = WindowsVersionWin10_Future;
       /* Insert checks for new Windows versions here */

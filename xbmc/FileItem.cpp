@@ -185,7 +185,7 @@ CFileItem::CFileItem(const std::shared_ptr<PVR::CPVREpgInfoTag>& tag,
     if (channel && !channel->IconPath().empty())
       SetArt("icon", channel->IconPath());
     else if (tag->IsRadio())
-      SetArt("icon", "DefaultAudio.png");
+      SetArt("icon", "DefaultMusicSongs.png");
     else
       SetArt("icon", "DefaultTVShows.png");
   }
@@ -211,7 +211,7 @@ CFileItem::CFileItem(const std::shared_ptr<CPVRChannelGroupMember>& channelGroup
   if (!channel->IconPath().empty())
     SetArt("icon", channel->IconPath());
   else if (channel->IsRadio())
-    SetArt("icon", "DefaultAudio.png");
+    SetArt("icon", "DefaultMusicSongs.png");
   else
     SetArt("icon", "DefaultTVShows.png");
 
@@ -243,7 +243,7 @@ CFileItem::CFileItem(const std::shared_ptr<CPVRRecording>& record)
     if (channel && !channel->IconPath().empty())
       SetArt("icon", channel->IconPath());
     else if (record->IsRadio())
-      SetArt("icon", "DefaultAudio.png");
+      SetArt("icon", "DefaultMusicSongs.png");
     else
       SetArt("icon", "DefaultTVShows.png");
   }
@@ -270,7 +270,7 @@ CFileItem::CFileItem(const std::shared_ptr<CPVRTimerInfoTag>& timer)
   if (!timer->ChannelIcon().empty())
     SetArt("icon", timer->ChannelIcon());
   else if (timer->m_bIsRadio)
-    SetArt("icon", "DefaultAudio.png");
+    SetArt("icon", "DefaultMusicSongs.png");
   else
     SetArt("icon", "DefaultTVShows.png");
 
@@ -1036,7 +1036,7 @@ bool CFileItem::IsCUESheet() const
 bool CFileItem::IsInternetStream(const bool bStrictCheck /* = false */) const
 {
   if (HasProperty("IsHTTPDirectory"))
-    return false;
+    return bStrictCheck;
 
   if (!m_strDynPath.empty())
     return URIUtils::IsInternetStream(m_strDynPath, bStrictCheck);
@@ -1375,7 +1375,7 @@ void CFileItem::FillInDefaultIcon()
       if (IsPVRChannel())
       {
         if (GetPVRChannelInfoTag()->IsRadio())
-          SetArt("icon", "DefaultAudio.png");
+          SetArt("icon", "DefaultMusicSongs.png");
         else
           SetArt("icon", "DefaultTVShows.png");
       }

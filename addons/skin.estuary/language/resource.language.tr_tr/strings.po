@@ -1,20 +1,33 @@
 # Kodi Media Center language file
 # Addon Name: Estuary
 # Addon id: skin.estuary
-# Addon Provider: phil65, Ichabod Fletchman
+# Addon Provider: Team Kodi
 msgid ""
 msgstr ""
 "Project-Id-Version: KODI Main\n"
-"Report-Msgid-Bugs-To: https://github.com/xbmc/xbmc/issues/\n"
+"Report-Msgid-Bugs-To: translations@kodi.tv\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Kodi Translation Team\n"
-"Language-Team: Turkish (Turkey) (http://www.transifex.com/projects/p/kodi-main/language/tr_TR/)\n"
+"PO-Revision-Date: 2021-08-26 10:37+0000\n"
+"Last-Translator: queeup <queeup@zoho.com>\n"
+"Language-Team: Turkish <https://kodi.weblate.cloud/projects/kodi-add-ons-skins/skin-estuary/tr_tr/>\n"
+"Language: tr_tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: tr_TR\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Weblate 4.8\n"
+
+msgctxt "Addon Summary"
+msgid "Estuary skin by phil65. (Kodi's default skin)"
+msgstr "Estuary dış görünümü. phil65 (Kodi'nin varsayılan dış görünümü)"
+
+msgctxt "Addon Description"
+msgid "Estuary is the default skin for Kodi 17.0 and above. It attempts to be easy for first time Kodi users to understand and use."
+msgstr "Estuary Kodi 17.0 ve yukarısı için varsayılan dış görünümdür. İlk kez Kodi kullananlar için anlaşılması ve kullanımı kolaydır."
+
+msgctxt "Addon Disclaimer"
+msgid "Estuary is the default skin for Kodi, removing it may cause issues"
+msgstr "Estuary Kodi için varsayılan dış görünümdür, kaldırmak sorunlara yol açabilir"
 
 msgctxt "#31000"
 msgid "Now playing"
@@ -76,10 +89,12 @@ msgctxt "#31014"
 msgid "Unplayed albums"
 msgstr "Çalınmamış albümler"
 
+#. home screen recordings widget: recent tv / radio recordings
 msgctxt "#31015"
 msgid "Recent recordings"
 msgstr "En son kayıtlar"
 
+#. home screen channel widget: recently played tv channels. (please note that in some non-english languages #31018 and #31016 might not be equal)
 msgctxt "#31016"
 msgid "Recently played channels"
 msgstr "Son oynatılan kanallar"
@@ -88,6 +103,7 @@ msgctxt "#31017"
 msgid "Rated"
 msgstr "Derecelendirildi"
 
+#. home screen channel widget: recently played radio channels. (please note that in some non-english languages #31018 and #31016 might not be equal)
 msgctxt "#31018"
 msgid "Recently played channels"
 msgstr "Son oynatılan kanallar"
@@ -274,7 +290,7 @@ msgstr "Son Güncelleme"
 
 msgctxt "#31071"
 msgid "by"
-msgstr "yazan:"
+msgstr "yazan"
 
 msgctxt "#31072"
 msgid "Power Options"
@@ -340,18 +356,22 @@ msgctxt "#31098"
 msgid "Select your Kodi user profile[CR]to login and continue"
 msgstr "Oturum açıp devam etmek için[CR]Kodi kullanıcı profilinizi seçin"
 
+#. viewtype name
 msgctxt "#31099"
 msgid "IconWall"
 msgstr "Simge Duvarı"
 
+#. viewtype name
 msgctxt "#31100"
 msgid "Shift"
 msgstr "Kaydır"
 
+#. viewtype name
 msgctxt "#31101"
 msgid "InfoWall"
 msgstr "Bilgi Duvarı"
 
+#. viewtype name
 msgctxt "#31102"
 msgid "Wall"
 msgstr "Duvar"
@@ -366,12 +386,13 @@ msgstr "Kitaplığınız şu anda boş. Kitaplığınızı kişisel medyaların�
 
 msgctxt "#31105"
 msgid "Add video sources and set the appropriate content type in order to populate your video libraries."
-msgstr "Video kitaplığınızı doldurmak için video kaynakları ekleyin ve  uygun içerik türünü ayarlayın."
+msgstr "Video kitaplığınızı doldurmak için video kaynakları ekleyin ve uygun içerik türünü ayarlayın."
 
 msgctxt "#31106"
 msgid "Teletext"
 msgstr "Teleteks"
 
+#. viewtype name
 msgctxt "#31107"
 msgid "WideList"
 msgstr "Geniş Liste"
@@ -395,6 +416,10 @@ msgstr "Yerel kitaplıkta ara"
 msgctxt "#31114"
 msgid "Search YouTube"
 msgstr "YouTube'da ara"
+
+msgctxt "#31115"
+msgid "Toggle subtitle"
+msgstr "Altyazıyı değiştir"
 
 msgctxt "#31116"
 msgid "Remove this main menu item"
@@ -494,7 +519,7 @@ msgstr "Piksel biçimi"
 
 msgctxt "#31141"
 msgid "Changes for version"
-msgstr "Sürümdeki değişiklikler -"
+msgstr "Sürümdeki değişiklikler:"
 
 msgctxt "#31142"
 msgid "Play speed"
@@ -584,26 +609,32 @@ msgctxt "#31163"
 msgid "Show Fanart background"
 msgstr "Arka plan fanartını göster"
 
+#. Choose profile identifier
 msgctxt "#31164"
 msgid "Choose kind of profile identification"
 msgstr "Profil kimliğini görüntüleme türünü seçin"
 
+#. Label for the kind of profile identification
 msgctxt "#31165"
 msgid "Profile name"
 msgstr "Profil adı"
 
+#. Label for the kind of profile identification
 msgctxt "#31166"
 msgid "Profile avatar"
 msgstr "Profil avatarı"
 
+#. Label of a setting
 msgctxt "#31167"
 msgid "Animate background"
 msgstr "Arka plana animasyon ekle"
 
+#. Label of a setting
 msgctxt "#31168"
 msgid "Show posters instead of thumbs for musicvideos"
 msgstr "Müzik videoları için küçük resimler yerine poster gösterin"
 
+#. Description label for skin settings area
 msgctxt "#31169"
 msgid "Artwork related settings."
 msgstr "Resimle ilgili ayarlar."

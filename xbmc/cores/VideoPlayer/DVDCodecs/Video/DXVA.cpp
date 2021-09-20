@@ -38,6 +38,7 @@
 
 using namespace DXVA;
 using namespace Microsoft::WRL;
+using namespace std::chrono_literals;
 
 DEFINE_GUID(DXVADDI_Intel_ModeH264_A,      0x604F8E64,0x4951,0x4c54,0x88,0xFE,0xAB,0xD2,0x5C,0x15,0xB3,0xD6);
 DEFINE_GUID(DXVADDI_Intel_ModeH264_C,      0x604F8E66,0x4951,0x4c54,0x88,0xFE,0xAB,0xD2,0x5C,0x15,0xB3,0xD6);
@@ -447,7 +448,8 @@ bool CContext::GetFormatAndConfig(AVCodecContext* avctx, D3D11_VIDEO_DECODER_DES
       }
 
       // check decoder config
-      D3D11_VIDEO_DECODER_DESC checkFormat = {*mode.guid, avctx->coded_width, avctx->coded_height,
+      D3D11_VIDEO_DECODER_DESC checkFormat = {*mode.guid, static_cast<UINT>(avctx->coded_width),
+                                              static_cast<UINT>(avctx->coded_height),
                                               render_targets_dxgi[j]};
       if (!GetConfig(checkFormat, config))
         continue;
@@ -1080,24 +1082,6 @@ static bool HasATIMP2Bug(AVCodecContext* avctx)
       && avctx->color_trc == AVCOL_TRC_GAMMA28;
 }
 
-// UHD HEVC Main10 causes crash on Xbox One S/X
-static bool HasXbox4kHevcMain10Bug(AVCodecContext* avctx)
-{
-  if (CSysInfo::GetWindowsDeviceFamily() != CSysInfo::Xbox)
-    return false;
-
-  if (avctx->codec_id != AV_CODEC_ID_HEVC)
-    return false;
-
-  if (avctx->profile != FF_PROFILE_HEVC_MAIN_10)
-    return false;
-
-  if (avctx->height <= 1080 || avctx->width <= 1920)
-    return false;
-
-  return true;
-}
-
 static bool CheckCompatibility(AVCodecContext* avctx)
 {
   if (avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO && HasATIMP2Bug(avctx))
@@ -1200,16 +1184,12 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, enum AVPixel
   case AV_CODEC_ID_HEVC:
     /* the HEVC DXVA2 spec asks for 128 pixel aligned surfaces to ensure
        all coding features have enough room to work with */
+    m_surface_alignment = 128;
+    // a driver may use multi-thread decoding internally (PC only)
     if (CSysInfo::GetWindowsDeviceFamily() != CSysInfo::Xbox)
-    {
-      m_surface_alignment = 128;
-      // a driver may use multi-thread decoding internally
       m_refs += CServiceBroker::GetCPUInfo()->GetCPUCount();
-    }
-
     // by specification hevc decoder can hold up to 8 unique refs
-    /* For some reason avctx->refs returns always 1 ref frame (tested
-       with well known 3 refs frames encodes) */
+    // ffmpeg may report only 1 refs frame when is unknown or not present in headers
     m_refs += (avctx->refs > 1) ? avctx->refs : 8;
     break;
   case AV_CODEC_ID_H264:
@@ -1241,14 +1221,6 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, enum AVPixel
                "Current available video memory ({} MB) is insufficient 4K video decoding (DXVA2) "
                "using {} surfaces. Decoder surfaces has been limited to 16.", videoMem / MB, m_refs);
     m_refs = 16;
-  }
-
-  /* On the Xbox 1/S with limited memory we have to
-     limit refs to avoid crashing device completely */
-  if (HasXbox4kHevcMain10Bug(avctx) && m_refs > 16)
-  {
-    CLog::LogFunction(LOGWARNING, "DXVA", "source requires to much refs which is not supported on Xbox One S/X. dxva will not be used.");
-    return false;
   }
 
   if (!OpenDecoder())
@@ -1372,7 +1344,7 @@ CDVDVideoCodec::VCReturn CDecoder::Check(AVCodecContext* avctx)
   {
     lock.Leave();
     // wait app device restoration
-    m_event.WaitMSec(2000);
+    m_event.Wait(2000ms);
     lock.Enter();
 
     // still in lost state after 2sec
@@ -1417,7 +1389,7 @@ CDVDVideoCodec::VCReturn CDecoder::Check(AVCodecContext* avctx)
     return CDVDVideoCodec::VC_NONE;
 
 #ifdef TARGET_WINDOWS_DESKTOP
-  D3D11_VIDEO_DECODER_EXTENSION data = {0};
+  D3D11_VIDEO_DECODER_EXTENSION data = {};
   union {
     DXVA_Status_H264 h264;
     DXVA_Status_VC1 vc1;

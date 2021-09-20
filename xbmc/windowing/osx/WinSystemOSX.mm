@@ -59,6 +59,7 @@
 using namespace KODI;
 using namespace MESSAGING;
 using namespace WINDOWING;
+using namespace std::chrono_literals;
 
 //------------------------------------------------------------------------------------------
 // special object-c class for handling the NSWindowDidMoveNotification callback.
@@ -89,8 +90,7 @@ using namespace WINDOWING;
     if ([context view])
     {
       NSPoint window_origin = [[[context view] window] frame].origin;
-      XBMC_Event newEvent;
-      memset(&newEvent, 0, sizeof(newEvent));
+      XBMC_Event newEvent = {};
       newEvent.type = XBMC_VIDEOMOVE;
       newEvent.move.x = window_origin.x;
       newEvent.move.y = window_origin.y;
@@ -171,7 +171,7 @@ NSOpenGLContext* CWinSystemOSXImpl::m_lastOwnedContext = nil;
 // but no device reset for 3 secs
 // a timeout fires the reset callback
 // (for ensuring that e.x. AE isn't stuck)
-#define LOST_DEVICE_TIMEOUT_MS 3000
+constexpr auto LOST_DEVICE_TIMEOUT_MS = 3000ms;
 static NSWindow* blankingWindows[MAX_DISPLAYS];
 
 //------------------------------------------------------------------------------------------
@@ -1831,15 +1831,18 @@ bool CWinSystemOSX::MessagePump()
   return m_winEvents->MessagePump();
 }
 
-void CWinSystemOSX::GetConnectedOutputs(std::vector<std::string> *outputs)
+std::vector<std::string> CWinSystemOSX::GetConnectedOutputs()
 {
-  outputs->push_back("Default");
+  std::vector<std::string> outputs;
+  outputs.emplace_back("Default");
 
   int numDisplays = [[NSScreen screens] count];
 
   for (int disp = 0; disp < numDisplays; disp++)
   {
     NSString *dispName = screenNameForDisplay(GetDisplayID(disp));
-    outputs->push_back([dispName UTF8String]);
+    outputs.emplace_back([dispName UTF8String]);
   }
+
+  return outputs;
 }
