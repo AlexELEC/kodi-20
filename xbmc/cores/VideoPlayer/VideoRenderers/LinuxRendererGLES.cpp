@@ -10,6 +10,7 @@
 
 #include "Application.h"
 #include "RenderCapture.h"
+#include "RenderCaptureGLES.h"
 #include "RenderFactory.h"
 #include "ServiceBroker.h"
 #include "VideoShaders/VideoFilterShaderGLES.h"
@@ -28,7 +29,6 @@
 #include "utils/MathUtils.h"
 #include "utils/log.h"
 #include "windowing/WinSystem.h"
-
 
 using namespace Shaders;
 
@@ -62,8 +62,6 @@ CLinuxRendererGLES::CLinuxRendererGLES()
 CLinuxRendererGLES::~CLinuxRendererGLES()
 {
   UnInit();
-
-  ReleaseShaders();
 
   free(m_planeBuffer);
   m_planeBuffer = nullptr;
@@ -545,12 +543,6 @@ void CLinuxRendererGLES::UpdateVideoFilter()
     m_scalingMethod = VS_SCALINGMETHOD_LINEAR;
   }
 
-  if (m_pVideoFilterShader)
-  {
-    delete m_pVideoFilterShader;
-    m_pVideoFilterShader = nullptr;
-  }
-
   m_fbo.fbo.Cleanup();
 
   VerifyGLState();
@@ -576,7 +568,11 @@ void CLinuxRendererGLES::UpdateVideoFilter()
   case VS_SCALINGMETHOD_LANCZOS3_FAST:
   case VS_SCALINGMETHOD_SPLINE36:
   case VS_SCALINGMETHOD_LANCZOS3:
+  case VS_SCALINGMETHOD_CUBIC_B_SPLINE:
   case VS_SCALINGMETHOD_CUBIC_MITCHELL:
+  case VS_SCALINGMETHOD_CUBIC_CATMULL:
+  case VS_SCALINGMETHOD_CUBIC_0_075:
+  case VS_SCALINGMETHOD_CUBIC_0_1:
   {
     if (m_renderMethod & RENDER_GLSL)
     {
@@ -594,7 +590,25 @@ void CLinuxRendererGLES::UpdateVideoFilter()
     }
 
     m_pVideoFilterShader = new ConvolutionFilterShader(m_scalingMethod);
-    if (!m_pVideoFilterShader->CompileAndLink())
+
+    auto renderSystem = CServiceBroker::GetRenderSystem();
+
+    auto renderSystemGLES = static_cast<CRenderSystemGLES*>(renderSystem);
+
+    auto shaderCache = renderSystemGLES->GetShaderCache();
+
+    auto shader =
+        static_cast<Shaders::ConvolutionFilterShader*>(shaderCache->Find(m_pVideoFilterShader));
+    if (shader)
+    {
+      delete m_pVideoFilterShader;
+      m_pVideoFilterShader = shader;
+    }
+    else if (m_pVideoFilterShader && m_pVideoFilterShader->CompileAndLink())
+    {
+      shaderCache->Add(m_pVideoFilterShader);
+    }
+    else
     {
       CLog::Log(LOGERROR, "GLES: Error compiling and linking video filter shader");
       break;
@@ -605,10 +619,6 @@ void CLinuxRendererGLES::UpdateVideoFilter()
     m_renderQuality = RQ_MULTIPASS;
       return;
   }
-  case VS_SCALINGMETHOD_CUBIC_B_SPLINE:
-  case VS_SCALINGMETHOD_CUBIC_CATMULL:
-  case VS_SCALINGMETHOD_CUBIC_0_075:
-  case VS_SCALINGMETHOD_CUBIC_0_1:
   case VS_SCALINGMETHOD_BICUBIC_SOFTWARE:
   case VS_SCALINGMETHOD_LANCZOS_SOFTWARE:
   case VS_SCALINGMETHOD_SINC_SOFTWARE:
@@ -643,8 +653,6 @@ void CLinuxRendererGLES::LoadShaders(int field)
     int requestedMethod = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_VIDEOPLAYER_RENDERMETHOD);
     CLog::Log(LOGDEBUG, "GLES: Requested render method: {}", requestedMethod);
 
-    ReleaseShaders();
-
     switch(requestedMethod)
     {
       case RENDER_METHOD_AUTO:
@@ -657,21 +665,43 @@ void CLinuxRendererGLES::LoadShaders(int field)
           CLog::Log(LOGINFO, "GLES: Selecting YUV 2 RGB shader");
 
           EShaderFormat shaderFormat = GetShaderFormat();
-          m_pYUVProgShader = new YUV2RGBProgressiveShader(shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709, m_srcPrimaries, m_toneMap);
+          m_toneMapMethod = m_videoSettings.m_ToneMapMethod;
+          m_pYUVProgShader = new YUV2RGBProgressiveShader(
+              shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709,
+              m_srcPrimaries, m_toneMap, m_toneMapMethod);
           m_pYUVProgShader->SetConvertFullColorRange(m_fullRange);
-          m_pYUVBobShader = new YUV2RGBBobShader(shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709, m_srcPrimaries, m_toneMap);
-          m_pYUVBobShader->SetConvertFullColorRange(m_fullRange);
+          // m_pYUVBobShader = new YUV2RGBBobShader(
+          //     shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709,
+          //     m_srcPrimaries, m_toneMap, m_toneMapMethod);
+          // m_pYUVBobShader->SetConvertFullColorRange(m_fullRange);
 
-          if ((m_pYUVProgShader && m_pYUVProgShader->CompileAndLink())
-              && (m_pYUVBobShader && m_pYUVBobShader->CompileAndLink()))
+          auto renderSystem = CServiceBroker::GetRenderSystem();
+
+          auto renderSystemGLES = static_cast<CRenderSystemGLES*>(renderSystem);
+
+          auto shaderCache = renderSystemGLES->GetShaderCache();
+
+          auto shader =
+              static_cast<Shaders::YUV2RGBProgressiveShader*>(shaderCache->Find(m_pYUVProgShader));
+          if (shader)
           {
+            delete m_pYUVProgShader;
+            m_pYUVProgShader = shader;
+
+            m_renderMethod = RENDER_GLSL;
+            UpdateVideoFilter();
+            break;
+          }
+          else if ((m_pYUVProgShader && m_pYUVProgShader->CompileAndLink()))
+          {
+            shaderCache->Add(m_pYUVProgShader);
+
             m_renderMethod = RENDER_GLSL;
             UpdateVideoFilter();
             break;
           }
           else
           {
-            ReleaseShaders();
             CLog::Log(LOGERROR, "GLES: Error enabling YUV2RGB GLSL shader");
             m_renderMethod = -1;
             break;
@@ -853,8 +883,9 @@ void CLinuxRendererGLES::RenderSinglePass(int index, int field)
   }
 
   bool toneMap = false;
+  int toneMapMethod = m_videoSettings.m_ToneMapMethod;
 
-  if (!m_passthroughHDR && m_videoSettings.m_ToneMapMethod != VS_TONEMAPMETHOD_OFF)
+  if (!m_passthroughHDR && toneMapMethod != VS_TONEMAPMETHOD_OFF)
   {
     if (buf.hasLightMetadata || (buf.hasDisplayMetadata && buf.displayMetadata.has_luminance))
     {
@@ -862,12 +893,13 @@ void CLinuxRendererGLES::RenderSinglePass(int index, int field)
     }
   }
 
-  if (toneMap != m_toneMap)
+  if (toneMap != m_toneMap || toneMapMethod != m_toneMapMethod)
   {
     m_reloadShaders = true;
   }
 
   m_toneMap = toneMap;
+  m_toneMapMethod = toneMapMethod;
 
   if (m_reloadShaders)
   {
@@ -986,7 +1018,9 @@ void CLinuxRendererGLES::RenderToFBO(int index, int field)
   }
 
   bool toneMap = false;
-  if (m_videoSettings.m_ToneMapMethod != VS_TONEMAPMETHOD_OFF)
+  int toneMapMethod = m_videoSettings.m_ToneMapMethod;
+
+  if (toneMapMethod != VS_TONEMAPMETHOD_OFF)
   {
     if (buf.hasLightMetadata || (buf.hasDisplayMetadata && buf.displayMetadata.has_luminance))
     {
@@ -994,12 +1028,13 @@ void CLinuxRendererGLES::RenderToFBO(int index, int field)
     }
   }
 
-  if (toneMap != m_toneMap)
+  if (toneMap != m_toneMap || m_toneMapMethod != toneMapMethod)
   {
     m_reloadShaders = true;
   }
 
   m_toneMap = toneMap;
+  m_toneMapMethod = toneMapMethod;
 
   if (m_reloadShaders)
   {
@@ -1704,12 +1739,16 @@ bool CLinuxRendererGLES::Supports(ESCALINGMETHOD method)
     return true;
   }
 
-  if(method == VS_SCALINGMETHOD_CUBIC_MITCHELL ||
-     method == VS_SCALINGMETHOD_LANCZOS2 ||
-     method == VS_SCALINGMETHOD_SPLINE36_FAST ||
-     method == VS_SCALINGMETHOD_LANCZOS3_FAST ||
-     method == VS_SCALINGMETHOD_SPLINE36 ||
-     method == VS_SCALINGMETHOD_LANCZOS3)
+  if (method == VS_SCALINGMETHOD_CUBIC_B_SPLINE ||
+      method == VS_SCALINGMETHOD_CUBIC_MITCHELL ||
+      method == VS_SCALINGMETHOD_CUBIC_CATMULL ||
+      method == VS_SCALINGMETHOD_CUBIC_0_075 ||
+      method == VS_SCALINGMETHOD_CUBIC_0_1 ||
+      method == VS_SCALINGMETHOD_LANCZOS2 ||
+      method == VS_SCALINGMETHOD_SPLINE36_FAST ||
+      method == VS_SCALINGMETHOD_LANCZOS3_FAST ||
+      method == VS_SCALINGMETHOD_SPLINE36 ||
+      method == VS_SCALINGMETHOD_LANCZOS3)
   {
     // if scaling is below level, avoid hq scaling
     float scaleX = fabs((static_cast<float>(m_sourceWidth) - m_destRect.Width()) / m_sourceWidth) * 100;
@@ -1767,4 +1806,9 @@ AVColorPrimaries CLinuxRendererGLES::GetSrcPrimaries(AVColorPrimaries srcPrimari
   }
 
   return ret;
+}
+
+CRenderCapture* CLinuxRendererGLES::GetRenderCapture()
+{
+  return new CRenderCaptureGLES;
 }
