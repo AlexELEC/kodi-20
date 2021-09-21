@@ -86,6 +86,8 @@ public:
   bool Supports(ERENDERFEATURE feature) override;
   bool Supports(ESCALINGMETHOD method) override;
 
+  CRenderCapture* GetRenderCapture() override;
+
 protected:
   static const int FIELD_FULL{0};
   static const int FIELD_TOP{1};
@@ -202,6 +204,7 @@ protected:
   bool m_fullRange;
   AVColorPrimaries m_srcPrimaries;
   bool m_toneMap = false;
+  int m_toneMapMethod = 0;
   bool m_passthroughHDR = false;
   unsigned char* m_planeBuffer = nullptr;
   size_t m_planeBufferSize = 0;
