@@ -169,8 +169,12 @@ int CDVDOverlayCodecFFmpeg::Decode(DemuxPacket *pPacket)
   m_StopTime    = DVD_MSEC_TO_TIME(m_Subtitle.end_display_time);
 
   //adapt start and stop time to our packet pts
-  bool dummy = false;
-  CDVDOverlayCodec::GetAbsoluteTimes(m_StartTime, m_StopTime, pPacket, dummy, pts_offset);
+  CDVDOverlayCodec::GetAbsoluteTimes(m_StartTime, m_StopTime, pPacket);
+
+  m_StartTime += pts_offset;
+  if (m_StopTime > 0)
+    m_StopTime += pts_offset;
+
   m_SubtitleIndex = 0;
 
   return OC_OVERLAY;
@@ -192,7 +196,7 @@ void CDVDOverlayCodecFFmpeg::Flush()
 CDVDOverlay* CDVDOverlayCodecFFmpeg::GetOverlay()
 {
   if(m_SubtitleIndex<0)
-    return NULL;
+    return nullptr;
 
   if(m_Subtitle.num_rects == 0 && m_SubtitleIndex == 0)
   {
@@ -208,14 +212,14 @@ CDVDOverlay* CDVDOverlayCodecFFmpeg::GetOverlay()
   if(m_Subtitle.format == 0)
   {
     if(m_SubtitleIndex >= (int)m_Subtitle.num_rects)
-      return NULL;
+      return nullptr;
 
     if(m_Subtitle.rects[m_SubtitleIndex] == NULL)
-      return NULL;
+      return nullptr;
 
     AVSubtitleRect rect = *m_Subtitle.rects[m_SubtitleIndex];
     if (rect.data[0] == NULL)
-      return NULL;
+      return nullptr;
 
     m_height = m_pCodecContext->height;
     m_width  = m_pCodecContext->width;
@@ -283,5 +287,5 @@ CDVDOverlay* CDVDOverlayCodecFFmpeg::GetOverlay()
     return overlay;
   }
 
-  return NULL;
+  return nullptr;
 }
