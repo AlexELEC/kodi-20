@@ -11,7 +11,7 @@ ARCHIVE=$(SOURCE).tar.xz
 # force using internal libtool
 export LIBTOOL=builds/unix/libtool
 CONFIGURE=cp -f $(CONFIG_SUB) $(CONFIG_GUESS) builds/unix; \
-          ./configure --prefix=$(PREFIX) --disable-shared --with-png=no
+          ./configure --prefix=$(PREFIX) --disable-shared --with-png=no --with-harfbuzz=yes
 
 LIBDYLIB=$(PLATFORM)/objs/.libs/lib$(LIBNAME).a
 
