@@ -63,8 +63,6 @@ CLinuxRendererGLES::~CLinuxRendererGLES()
 {
   UnInit();
 
-  ReleaseShaders();
-
   free(m_planeBuffer);
   m_planeBuffer = nullptr;
 }
@@ -545,12 +543,6 @@ void CLinuxRendererGLES::UpdateVideoFilter()
     m_scalingMethod = VS_SCALINGMETHOD_LINEAR;
   }
 
-  if (m_pVideoFilterShader)
-  {
-    delete m_pVideoFilterShader;
-    m_pVideoFilterShader = nullptr;
-  }
-
   m_fbo.fbo.Cleanup();
 
   VerifyGLState();
@@ -598,7 +590,25 @@ void CLinuxRendererGLES::UpdateVideoFilter()
     }
 
     m_pVideoFilterShader = new ConvolutionFilterShader(m_scalingMethod);
-    if (!m_pVideoFilterShader->CompileAndLink())
+
+    auto renderSystem = CServiceBroker::GetRenderSystem();
+
+    auto renderSystemGLES = static_cast<CRenderSystemGLES*>(renderSystem);
+
+    auto shaderCache = renderSystemGLES->GetShaderCache();
+
+    auto shader =
+        static_cast<Shaders::ConvolutionFilterShader*>(shaderCache->Find(m_pVideoFilterShader));
+    if (shader)
+    {
+      delete m_pVideoFilterShader;
+      m_pVideoFilterShader = shader;
+    }
+    else if (m_pVideoFilterShader && m_pVideoFilterShader->CompileAndLink())
+    {
+      shaderCache->Add(m_pVideoFilterShader);
+    }
+    else
     {
       CLog::Log(LOGERROR, "GLES: Error compiling and linking video filter shader");
       break;
@@ -643,8 +653,6 @@ void CLinuxRendererGLES::LoadShaders(int field)
     int requestedMethod = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(CSettings::SETTING_VIDEOPLAYER_RENDERMETHOD);
     CLog::Log(LOGDEBUG, "GLES: Requested render method: {}", requestedMethod);
 
-    ReleaseShaders();
-
     switch(requestedMethod)
     {
       case RENDER_METHOD_AUTO:
@@ -657,21 +665,43 @@ void CLinuxRendererGLES::LoadShaders(int field)
           CLog::Log(LOGINFO, "GLES: Selecting YUV 2 RGB shader");
 
           EShaderFormat shaderFormat = GetShaderFormat();
-          m_pYUVProgShader = new YUV2RGBProgressiveShader(shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709, m_srcPrimaries, m_toneMap);
+          m_toneMapMethod = m_videoSettings.m_ToneMapMethod;
+          m_pYUVProgShader = new YUV2RGBProgressiveShader(
+              shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709,
+              m_srcPrimaries, m_toneMap, m_toneMapMethod);
           m_pYUVProgShader->SetConvertFullColorRange(m_fullRange);
-          m_pYUVBobShader = new YUV2RGBBobShader(shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709, m_srcPrimaries, m_toneMap);
-          m_pYUVBobShader->SetConvertFullColorRange(m_fullRange);
+          // m_pYUVBobShader = new YUV2RGBBobShader(
+          //     shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709,
+          //     m_srcPrimaries, m_toneMap, m_toneMapMethod);
+          // m_pYUVBobShader->SetConvertFullColorRange(m_fullRange);
 
-          if ((m_pYUVProgShader && m_pYUVProgShader->CompileAndLink())
-              && (m_pYUVBobShader && m_pYUVBobShader->CompileAndLink()))
+          auto renderSystem = CServiceBroker::GetRenderSystem();
+
+          auto renderSystemGLES = static_cast<CRenderSystemGLES*>(renderSystem);
+
+          auto shaderCache = renderSystemGLES->GetShaderCache();
+
+          auto shader =
+              static_cast<Shaders::YUV2RGBProgressiveShader*>(shaderCache->Find(m_pYUVProgShader));
+          if (shader)
           {
+            delete m_pYUVProgShader;
+            m_pYUVProgShader = shader;
+
+            m_renderMethod = RENDER_GLSL;
+            UpdateVideoFilter();
+            break;
+          }
+          else if ((m_pYUVProgShader && m_pYUVProgShader->CompileAndLink()))
+          {
+            shaderCache->Add(m_pYUVProgShader);
+
             m_renderMethod = RENDER_GLSL;
             UpdateVideoFilter();
             break;
           }
           else
           {
-            ReleaseShaders();
             CLog::Log(LOGERROR, "GLES: Error enabling YUV2RGB GLSL shader");
             m_renderMethod = -1;
             break;
@@ -853,8 +883,9 @@ void CLinuxRendererGLES::RenderSinglePass(int index, int field)
   }
 
   bool toneMap = false;
+  int toneMapMethod = m_videoSettings.m_ToneMapMethod;
 
-  if (!m_passthroughHDR && m_videoSettings.m_ToneMapMethod != VS_TONEMAPMETHOD_OFF)
+  if (!m_passthroughHDR && toneMapMethod != VS_TONEMAPMETHOD_OFF)
   {
     if (buf.hasLightMetadata || (buf.hasDisplayMetadata && buf.displayMetadata.has_luminance))
     {
@@ -862,12 +893,13 @@ void CLinuxRendererGLES::RenderSinglePass(int index, int field)
     }
   }
 
-  if (toneMap != m_toneMap)
+  if (toneMap != m_toneMap || toneMapMethod != m_toneMapMethod)
   {
     m_reloadShaders = true;
   }
 
   m_toneMap = toneMap;
+  m_toneMapMethod = toneMapMethod;
 
   if (m_reloadShaders)
   {
@@ -986,7 +1018,9 @@ void CLinuxRendererGLES::RenderToFBO(int index, int field)
   }
 
   bool toneMap = false;
-  if (m_videoSettings.m_ToneMapMethod != VS_TONEMAPMETHOD_OFF)
+  int toneMapMethod = m_videoSettings.m_ToneMapMethod;
+
+  if (toneMapMethod != VS_TONEMAPMETHOD_OFF)
   {
     if (buf.hasLightMetadata || (buf.hasDisplayMetadata && buf.displayMetadata.has_luminance))
     {
@@ -994,12 +1028,13 @@ void CLinuxRendererGLES::RenderToFBO(int index, int field)
     }
   }
 
-  if (toneMap != m_toneMap)
+  if (toneMap != m_toneMap || m_toneMapMethod != toneMapMethod)
   {
     m_reloadShaders = true;
   }
 
   m_toneMap = toneMap;
+  m_toneMapMethod = toneMapMethod;
 
   if (m_reloadShaders)
   {
@@ -1319,9 +1354,8 @@ bool CLinuxRendererGLES::UploadYV12Texture(int source)
             im->stride[1], im->bpp, im->plane[1]);
 
   // load V plane
-  LoadPlane(buf.fields[FIELD_FULL][2], GL_ALPHA,
-            im->width >> im->cshift_x, im->height >> im->cshift_y,
-            im->stride[2], im->bpp, im->plane[2]);
+  LoadPlane(buf.fields[FIELD_FULL][2], GL_LUMINANCE, im->width >> im->cshift_x,
+            im->height >> im->cshift_y, im->stride[2], im->bpp, im->plane[2]);
 
   VerifyGLState();
 
@@ -1430,18 +1464,8 @@ bool CLinuxRendererGLES::CreateYV12Texture(int index)
       }
 
       glBindTexture(m_textureTarget, plane.id);
-
-      GLint format;
-      if (p == 2) // V plane needs an alpha texture
-      {
-        format = GL_ALPHA;
-      }
-      else
-      {
-        format = GL_LUMINANCE;
-      }
-
-      glTexImage2D(m_textureTarget, 0, format, plane.texwidth, plane.texheight, 0, format, GL_UNSIGNED_BYTE, nullptr);
+      glTexImage2D(m_textureTarget, 0, GL_LUMINANCE, plane.texwidth, plane.texheight, 0,
+                   GL_LUMINANCE, GL_UNSIGNED_BYTE, nullptr);
       glTexParameteri(m_textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameteri(m_textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(m_textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
