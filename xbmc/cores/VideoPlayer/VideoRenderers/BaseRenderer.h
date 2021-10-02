@@ -98,8 +98,6 @@ public:
 
   virtual CRenderCapture* GetRenderCapture() { return nullptr; }
 
-  virtual CRenderCapture* GetRenderCapture() { return nullptr; }
-
 protected:
   void CalcNormalRenderRect(float offsetX, float offsetY, float width, float height,
                             float inputFrameRatio, float zoomAmount, float verticalShift);
