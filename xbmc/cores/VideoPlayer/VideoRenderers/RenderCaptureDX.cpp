@@ -18,7 +18,7 @@ extern "C"
 #include <libavutil/mem.h>
 }
 
-CRenderCaptureDX::CRenderCaptureDX()
+CRenderCaptureDX::CRenderCaptureDX() : CRenderCapture()
 {
   DX::Windowing()->Register(this);
 }

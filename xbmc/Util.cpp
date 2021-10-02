@@ -1164,8 +1164,11 @@ int CUtil::GetMatchingSource(const std::string& strPath1, VECSOURCES& VECSOURCES
 
   if (checkURL.IsProtocol("shout"))
     strPath = checkURL.GetHostName();
+
+  // a plugin path should not be configured in any mediasource
   if (checkURL.IsProtocol("plugin"))
-    return 1;
+    return -1;
+
   if (checkURL.IsProtocol("multipath"))
     strPath = CMultiPathDirectory::GetFirstPath(strPath);
 
@@ -1572,11 +1575,10 @@ void CUtil::GetSkinThemes(std::vector<std::string>& vecTheme)
 void CUtil::InitRandomSeed()
 {
   // Init random seed
-  int64_t now;
-  now = CurrentHostCounter();
-  unsigned int seed = (unsigned int)now;
-  //  CLog::Log(LOGDEBUG, "{} - Initializing random seed with {}", __FUNCTION__, seed);
-  srand(seed);
+  auto now = std::chrono::steady_clock::now();
+  auto seed = now.time_since_epoch();
+
+  srand(static_cast<unsigned int>(seed.count()));
 }
 
 #if defined(TARGET_POSIX) && !defined(TARGET_DARWIN_TVOS)

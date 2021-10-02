@@ -17,11 +17,11 @@ class CRenderCaptureDX : public CRenderCapture, public ID3DResource
 {
 public:
   CRenderCaptureDX();
-  ~CRenderCaptureDX() overide;
+  ~CRenderCaptureDX() override;
 
   void BeginRender() override;
   void EndRender() override;
-  void ReadOut() overide;
+  void ReadOut() override;
 
   void OnDestroyDevice(bool fatal) override;
   void OnCreateDevice() override{};

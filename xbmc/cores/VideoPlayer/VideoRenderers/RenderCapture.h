@@ -26,11 +26,10 @@ class CRenderCapture
     CRenderCapture() = default;
     virtual ~CRenderCapture() = default;
 
-    virtual void BeginRender() {}
-    virtual void EndRender() {}
+    virtual void BeginRender() = 0;
+    virtual void EndRender() = 0;
 
     virtual void ReadOut() {}
-
     virtual void* GetRenderBuffer() { return m_pixels; }
 
     /* \brief Called by the rendermanager to set the state, should not be called by anything else */

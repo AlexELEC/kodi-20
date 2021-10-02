@@ -57,7 +57,12 @@ public:
   /*! \brief Reset the current list of items.
    Derived classes may choose to ignore this.
    */
-  virtual void Reset() {};
+  virtual void Reset() {}
+
+  /*! \brief Free all GUI resources allocated by the items.
+   \param immediately true to free resources imediately, free resources async later otherwise.
+   */
+  virtual void FreeResources(bool immediately) {}
 
   /*! \brief Click event on an item.
    \param item the item that was clicked.
@@ -82,7 +87,7 @@ public:
    \param always whether this item should always be used on first focus.
    \sa GetDefaultItem, AlwaysFocusDefaultItem
    */
-  virtual void SetDefaultItem(int item, bool always) {};
+  virtual void SetDefaultItem(int item, bool always) {}
 
   /*! \brief The default item to focus.
    \return the item to focus by default. -1 for none.

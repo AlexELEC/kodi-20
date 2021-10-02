@@ -226,7 +226,9 @@ bool CWinRenderer::RenderCapture(CRenderCapture* capture)
   {
     const CRect destRect(0, 0, static_cast<float>(capture->GetWidth()), static_cast<float>(capture->GetHeight()));
 
-    m_renderer->Render(capture->GetTarget(), m_sourceRect, destRect, GetScreenRect());
+    auto cap = static_cast<CRenderCaptureDX*>(capture);
+
+    m_renderer->Render(cap->GetTarget(), m_sourceRect, destRect, GetScreenRect());
     capture->EndRender();
 
     return true;

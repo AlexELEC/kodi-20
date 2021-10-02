@@ -508,8 +508,11 @@ unsigned int CRenderManager::AllocRenderCapture()
   if (m_pRenderer)
   {
     CRenderCapture* capture = m_pRenderer->GetRenderCapture();
-    m_captures[m_nextCaptureId] = capture;
-    return m_nextCaptureId++;
+    if (capture)
+    {
+      m_captures[m_nextCaptureId] = capture;
+      return m_nextCaptureId++;
+    }
   }
 
   return m_nextCaptureId;

@@ -32,25 +32,26 @@ std::string FourCCToString(uint32_t fourcc)
 std::string ModifierToString(uint64_t modifier)
 {
 #if defined(HAVE_DRM_MODIFIER_NAME)
-  std::string modifierName(drmGetFormatModifierName(modifier));
-  std::string vendorName(drmGetFormatModifierVendor(modifier));
+  std::string modifierVendorStr{"UNKNOWN_VENDOR"};
 
-  if (modifierName.empty())
-  {
-    if (!vendorName.empty())
-    {
-      return vendorName + "_UNKNOWN_MODIFIER";
-    }
-    else
-    {
-      return "UNKNOWN_VENDOR_UNKNOWN_MODIFIER";
-    }
-  }
+  const char* vendorName = drmGetFormatModifierVendor(modifier);
+  if (vendorName)
+    modifierVendorStr = std::string(vendorName);
+
+  free(const_cast<char*>(vendorName));
+
+  std::string modifierNameStr{"UNKNOWN_MODIFIER"};
+
+  const char* modifierName = drmGetFormatModifierName(modifier);
+  if (modifierName)
+    modifierNameStr = std::string(modifierName);
+
+  free(const_cast<char*>(modifierName));
 
   if (modifier == DRM_FORMAT_MOD_LINEAR)
-    return modifierName;
+    return modifierNameStr;
 
-  return vendorName + "_" + modifierName;
+  return modifierVendorStr + "_" + modifierNameStr;
 #else
   return StringUtils::Format("{:#x}", modifier);
 #endif

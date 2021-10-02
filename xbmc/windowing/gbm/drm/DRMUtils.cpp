@@ -237,7 +237,6 @@ bool CDRMUtils::FindPlanes()
     CLog::Log(LOGDEBUG, "CDRMUtils::{} - using video plane {}", __FUNCTION__,
               m_video_plane->GetPlaneId());
 
-  // assume we prefer direct-to-plane rendering support over 10bit gui support for now.
   if (m_gui_plane->SupportsFormat(DRM_FORMAT_XRGB2101010))
   {
     m_gui_plane->SetFormat(DRM_FORMAT_XRGB2101010);
