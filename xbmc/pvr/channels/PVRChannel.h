@@ -9,6 +9,8 @@
 #pragma once
 
 #include "addons/kodi-dev-kit/include/kodi/c-api/addon-instance/pvr/pvr_channels.h"
+#include "addons/kodi-dev-kit/include/kodi/c-api/addon-instance/pvr/pvr_providers.h"
+#include "pvr/PVRCachedImage.h"
 #include "pvr/channels/PVRChannelNumber.h"
 #include "threads/CriticalSection.h"
 #include "utils/ISerializable.h"
@@ -25,6 +27,7 @@ namespace PVR
 {
   enum class PVREvent;
 
+  class CPVRProvider;
   class CPVREpg;
   class CPVREpgInfoTag;
   class CPVRRadioRDSInfoTag;
@@ -34,7 +37,10 @@ namespace PVR
     friend class CPVRDatabase;
 
   public:
+    static const std::string IMAGE_OWNER_PATTERN;
+
     explicit CPVRChannel(bool bRadio);
+    CPVRChannel(bool bRadio, const std::string& iconPath);
     CPVRChannel(const PVR_CHANNEL& channel, unsigned int iClientId);
 
     virtual ~CPVRChannel();
@@ -142,6 +148,11 @@ namespace PVR
      * @return True if the flag was changed, false otherwise.
      */
     bool SetArchive(bool bHasArchive);
+
+    /*!
+     * @return The path to the icon for this channel as given by the client.
+     */
+    std::string ClientIconPath() const;
 
     /*!
      * @return The path to the icon for this channel.
@@ -416,6 +427,12 @@ namespace PVR
     int ClientOrder() const { return m_iClientOrder; }
 
     /*!
+     * @brief Get the client provider Uid for this channel
+     * @return m_iClientProviderUid The provider Uid for this channel
+     */
+    int ClientProviderUid() const { return m_iClientProviderUid; }
+
+    /*!
      * @brief CEventStream callback for PVR events.
      * @param event The event.
      */
@@ -431,9 +448,30 @@ namespace PVR
      */
     void Unlock() { m_critSection.unlock(); }
 
+    /*!
+     * @brief Get the default provider of this channel. The default
+     *        provider represents the PVR add-on itself.
+     * @return The default provider of this channel
+     */
+    std::shared_ptr<CPVRProvider> GetDefaultProvider() const;
+
+    /*!
+     * @brief Whether or not this channel has a provider set by the client.
+     * @return True if a provider was set by the client, false otherwise.
+     */
+    bool HasClientProvider() const;
+
+    /*!
+     * @brief Get the provider of this channel. This may be the default provider or a
+     *        custom provider set by the client. If @ref "HasClientProvider()" returns true
+     *        the provider will be custom from the client, otherwise the default provider.
+     * @return The provider of this channel
+     */
+    std::shared_ptr<CPVRProvider> GetProvider() const;
+
     //@}
   private:
-    CPVRChannel();
+    CPVRChannel() = delete;
     CPVRChannel(const CPVRChannel& tag) = delete;
     CPVRChannel& operator=(const CPVRChannel& channel) = delete;
 
@@ -447,6 +485,13 @@ namespace PVR
      */
     void ResetEPG();
 
+    /*!
+     * @brief Set the client provider Uid for this channel
+     * @param iClientProviderUid The provider Uid for this channel
+     * @return True if the something changed, false otherwise.
+     */
+    bool SetClientProviderUid(int iClientProviderUid);
+
     /*! @name XBMC related channel data
      */
     //@{
@@ -456,7 +501,7 @@ namespace PVR
     bool m_bIsUserSetName = false; /*!< true if user set the channel name via GUI, false if not */
     bool m_bIsUserSetIcon = false; /*!< true if user set the icon via GUI, false if not */
     bool m_bIsLocked = false; /*!< true if channel is locked, false if not */
-    std::string m_strIconPath; /*!< the path to the icon for this channel */
+    CPVRCachedImage m_iconPath; /*!< the path to the icon for this channel */
     std::string m_strChannelName; /*!< the name for this channel used by XBMC */
     time_t m_iLastWatched = 0; /*!< last time channel has been watched */
     bool m_bChanged = false; /*!< true if anything in this entry was changed that needs to be persisted */
@@ -485,6 +530,7 @@ namespace PVR
     int m_iClientEncryptionSystem = -1; /*!< the encryption system used by this channel. 0 for FreeToAir, -1 for unknown */
     std::string m_strClientEncryptionName; /*!< the name of the encryption system used by this channel */
     int m_iClientOrder = 0; /*!< the order from this channels group member */
+    int m_iClientProviderUid = PVR_PROVIDER_INVALID_UID; /*!< the unique id for this provider from the client */
     //@}
 
     mutable CCriticalSection m_critSection;

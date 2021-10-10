@@ -30,6 +30,7 @@ namespace PVR
   class CPVRChannel;
   class CPVRChannelGroup;
   class CPVRChannelGroupsContainer;
+  class CPVRProviders;
   class CPVRClient;
   class CPVRClients;
   class CPVRDatabase;
@@ -102,6 +103,12 @@ namespace PVR
                   const std::string& sender,
                   const std::string& message,
                   const CVariant& data) override;
+
+    /*!
+     * @brief Get the providers container.
+     * @return The providers container.
+     */
+    std::shared_ptr<CPVRProviders> Providers() const;
 
     /*!
      * @brief Get the channel groups container.
@@ -285,6 +292,11 @@ namespace PVR
     void TriggerChannelsUpdate();
 
     /*!
+     * @brief Let the background thread update the provider list.
+     */
+    void TriggerProvidersUpdate();
+
+    /*!
      * @brief Let the background thread update the channel groups list.
      */
     void TriggerChannelGroupsUpdate();
@@ -293,6 +305,11 @@ namespace PVR
      * @brief Let the background thread search for all missing channel icons.
      */
     void TriggerSearchMissingChannelIcons();
+
+    /*!
+     * @brief Let the background thread erase stale texture db entries and image files.
+     */
+    void TriggerCleanupCachedImages();
 
     /*!
      * @brief Let the background thread search for missing channel icons for channels contained in the given group.
@@ -414,6 +431,7 @@ namespace PVR
 
     /** @name containers */
     //@{
+    std::shared_ptr<CPVRProviders> m_providers; /*!< pointer to the providers container */
     std::shared_ptr<CPVRChannelGroupsContainer> m_channelGroups; /*!< pointer to the channel groups container */
     std::shared_ptr<CPVRRecordings> m_recordings; /*!< pointer to the recordings container */
     std::shared_ptr<CPVRTimers> m_timers; /*!< pointer to the timers container */

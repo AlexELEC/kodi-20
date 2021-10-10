@@ -25,6 +25,8 @@
  */
 
 #include "XBDateTime.h"
+#include "addons/kodi-dev-kit/include/kodi/c-api/addon-instance/pvr/pvr_providers.h"
+#include "pvr/PVRCachedImage.h"
 #include "threads/CriticalSection.h"
 #include "threads/SystemClock.h"
 #include "video/Bookmark.h"
@@ -43,6 +45,7 @@ namespace PVR
 {
   class CPVRChannel;
   class CPVRClient;
+  class CPVRProvider;
   class CPVRTimerInfoTag;
 
   /*!
@@ -65,15 +68,14 @@ namespace PVR
   class CPVRRecording final : public CVideoInfoTag
   {
   public:
+    static const std::string IMAGE_OWNER_PATTERN;
+
     int m_iClientId; /*!< ID of the backend */
     std::string m_strRecordingId; /*!< unique ID of the recording on the client */
     std::string m_strChannelName; /*!< name of the channel this was recorded from */
     int m_iPriority; /*!< priority of this recording */
     int m_iLifetime; /*!< lifetime of this recording */
     std::string m_strDirectory; /*!< directory of this recording on the client */
-    std::string m_strIconPath; /*!< icon path */
-    std::string m_strThumbnailPath; /*!< thumbnail path */
-    std::string m_strFanartPath; /*!< fanart path */
     unsigned m_iRecordingId; /*!< id that won't change while xbmc is running */
 
     CPVRRecording();
@@ -282,6 +284,42 @@ namespace PVR
     int ClientID() const;
 
     /*!
+     * @brief Return the icon path as given by the client.
+     * @return The path.
+     */
+    const std::string& ClientIconPath() const { return m_iconPath.GetClientImage(); }
+
+    /*!
+     * @brief Return the thumbnail path as given by the client.
+     * @return The path.
+     */
+    const std::string& ClientThumbnailPath() const { return m_thumbnailPath.GetClientImage(); }
+
+    /*!
+     * @brief Return the fanart path as given by the client.
+     * @return The path.
+     */
+    const std::string& ClientFanartPath() const { return m_fanartPath.GetClientImage(); }
+
+    /*!
+     * @brief Return the icon path used by Kodi.
+     * @return The path.
+     */
+    const std::string& IconPath() const { return m_iconPath.GetLocalImage(); }
+
+    /*!
+     * @brief Return the thumnail path used by Kodi.
+     * @return The path.
+     */
+    const std::string& ThumbnailPath() const { return m_thumbnailPath.GetLocalImage(); }
+
+    /*!
+     * @brief Return the fanart path used by Kodi.
+     * @return The path.
+     */
+    const std::string& FanartPath() const { return m_fanartPath.GetLocalImage(); }
+
+    /*!
      * @brief Retrieve the recording Episode Name
      * @note Returns an empty string if no Episode Name was provided by the PVR client
      */
@@ -391,21 +429,57 @@ namespace PVR
     */
    int64_t GetSizeInBytes() const;
 
-    /*!
-     * @brief Mark a recording as dirty/clean.
-     * @param bDirty true to mark as dirty, false to mark as clean.
-     */
-    void SetDirty(bool bDirty) { m_bDirty = bDirty; }
+   /*!
+    * @brief Mark a recording as dirty/clean.
+    * @param bDirty true to mark as dirty, false to mark as clean.
+    */
+   void SetDirty(bool bDirty) { m_bDirty = bDirty; }
 
-    /*!
-     * @brief Return whether the recording is marked dirty.
-     * @return true if dirty, false otherwise.
-     */
-    bool IsDirty() const { return m_bDirty; }
+   /*!
+    * @brief Return whether the recording is marked dirty.
+    * @return true if dirty, false otherwise.
+    */
+   bool IsDirty() const { return m_bDirty; }
+
+   /*!
+    * @brief Get the uid of the provider on the client which this recording is from
+    * @return the client uid of the provider or PVR_PROVIDER_INVALID_UID
+    */
+   int ClientProviderUniqueId() const;
+
+   /*!
+    * @brief Get the client provider name for this recording
+    * @return m_strProviderName The name for this recording provider
+    */
+   std::string ProviderName() const;
+
+   /*!
+    * @brief Get the default provider of this recording. The default
+    *        provider represents the PVR add-on itself.
+    * @return The default provider of this recording
+    */
+   std::shared_ptr<CPVRProvider> GetDefaultProvider() const;
+
+   /*!
+    * @brief Whether or not this recording has a provider set by the client.
+    * @return True if a provider was set by the client, false otherwise.
+    */
+   bool HasClientProvider() const;
+
+   /*!
+    * @brief Get the provider of this recording. This may be the default provider or a
+    *        custom provider set by the client. If @ref "HasClientProvider()" returns true
+    *        the provider will be custom from the client, otherwise the default provider.
+    * @return The provider of this recording
+    */
+   std::shared_ptr<CPVRProvider> GetProvider() const;
 
   private:
     void UpdatePath();
 
+    CPVRCachedImage m_iconPath; /*!< icon path */
+    CPVRCachedImage m_thumbnailPath; /*!< thumbnail path */
+    CPVRCachedImage m_fanartPath; /*!< fanart path */
     CDateTime m_recordingTime; /*!< start time of the recording */
     bool m_bGotMetaData;
     bool m_bIsDeleted; /*!< set if entry is a deleted recording which can be undelete */
@@ -420,6 +494,9 @@ namespace PVR
     mutable XbmcThreads::EndTime m_recordingSizeRefetchTimeout;
     int64_t m_sizeInBytes = 0; /*!< the size of the recording in bytes */
     bool m_bDirty = false;
+    std::string m_strProviderName; /*!< name of the provider this recording is from */
+    int m_iClientProviderUniqueId =
+        PVR_PROVIDER_INVALID_UID; /*!< provider uid associated with this recording on the client */
 
     mutable CCriticalSection m_critSection;
   };

@@ -65,7 +65,7 @@ namespace PVR
      * @brief Get the minimal database version that is required to operate correctly.
      * @return The minimal database version.
      */
-    int GetSchemaVersion() const override { return 13; }
+    int GetSchemaVersion() const override { return 14; }
 
     /*!
      * @brief Get the default sqlite database filename.
@@ -108,6 +108,13 @@ namespace PVR
      * @return The entries.
      */
     std::vector<std::shared_ptr<CPVREpgInfoTag>> GetAllEpgTags(int iEpgID);
+
+    /*!
+     * @brief Get all icon paths for a given EPG id.
+     * @param iEpgID The ID of the EPG.
+     * @return The entries.
+     */
+    std::vector<std::string> GetAllIconPaths(int iEpgID);
 
     /*!
      * @brief Get the start time of the first tag in this EPG.
