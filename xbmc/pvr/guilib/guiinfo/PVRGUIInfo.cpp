@@ -465,16 +465,7 @@ bool CPVRGUIInfo::GetListItemAndPlayerLabel(const CFileItem* item, const CGUIInf
         if (!recording->Channel())
         {
           auto provider = recording->GetProvider();
-          if (provider->GetIconPath().empty())
-          {
-            provider = recording->GetDefaultProvider();
-            if (!provider->GetIconPath().empty())
-            {
-              strValue = provider->GetIconPath();
-              return true;
-            }
-          }
-          else
+          if (!provider->GetIconPath().empty())
           {
             strValue = provider->GetIconPath();
             return true;
@@ -1279,11 +1270,11 @@ bool CPVRGUIInfo::GetListItemAndPlayerBool(const CFileItem* item, const CGUIInfo
       }
       break;
     case LISTITEM_HASTIMER:
-      if (item->IsPVRChannel() || item->IsEPG())
+      if (item->IsPVRChannel() || item->IsEPG() || item->IsPVRTimer())
       {
-        const std::shared_ptr<CPVREpgInfoTag> epgTag = CPVRItem(item).GetEpgInfoTag();
-        if (epgTag)
-          bValue = !!CServiceBroker::GetPVRManager().Timers()->GetTimerForEpgTag(epgTag);
+        const std::shared_ptr<CPVRTimerInfoTag> timer = CPVRItem(item).GetTimerInfoTag();
+        if (timer)
+          bValue = true;
         return true;
       }
       break;

@@ -715,6 +715,18 @@ std::vector<RESOLUTION_INFO> CDRMUtils::GetModes()
   return resolutions;
 }
 
+std::vector<std::string> CDRMUtils::GetConnectedConnectorNames()
+{
+  std::vector<std::string> connectorNames;
+  for (const auto& connector : m_connectors)
+  {
+    if (connector->IsConnected())
+      connectorNames.emplace_back(connector->GetName());
+  }
+
+  return connectorNames;
+}
+
 uint32_t CDRMUtils::FourCCWithAlpha(uint32_t fourcc)
 {
   return (fourcc & 0xFFFFFF00) | static_cast<uint32_t>('A');
