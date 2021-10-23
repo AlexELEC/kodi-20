@@ -20,7 +20,11 @@
 
 #version 100
 
+#extension GL_OES_EGL_image_external : require
+
 precision mediump float;
+
+uniform samplerExternalOES m_samp0;
 
 uniform sampler2D m_sampY;
 uniform sampler2D m_sampU;
@@ -43,12 +47,22 @@ void main()
   vec4 rgb;
   vec4 yuv;
 
-#if defined(XBMC_YV12) || defined(XBMC_NV12)
+#if defined(XBMC_YV12)
 
   yuv = vec4(texture2D(m_sampY, m_cordY).r,
-             texture2D(m_sampU, m_cordU).g,
-             texture2D(m_sampV, m_cordV).a,
+             texture2D(m_sampU, m_cordU).r,
+             texture2D(m_sampV, m_cordV).r,
              1.0);
+
+  rgb = m_yuvmat * yuv;
+
+#elif defined(XBMC_NV12)
+
+  yuv = vec4(texture2D(m_sampY, m_cordY).r,
+             texture2D(m_sampU, m_cordU).rg,
+             1.0);
+
+  rgb = m_yuvmat * yuv;
 
 #elif defined(XBMC_NV12_RRG)
 
@@ -57,9 +71,14 @@ void main()
              texture2D(m_sampV, m_cordV).g,
              1.0);
 
+  rgb = m_yuvmat * yuv;
+
+#elif defined(XBMC_OES)
+
+  rgb = texture2D(m_samp0, m_cordY);
+
 #endif
 
-  rgb = m_yuvmat * yuv;
   rgb.a = m_alpha;
 
 #if defined(XBMC_COL_CONVERSION)
