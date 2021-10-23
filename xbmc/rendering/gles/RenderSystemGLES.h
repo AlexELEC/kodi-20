@@ -10,7 +10,7 @@
 
 #include "GLESShader.h"
 #include "rendering/RenderSystem.h"
-#include "utils/Color.h"
+#include "utils/ColorUtils.h"
 #include "utils/log.h"
 
 #include <array>
@@ -107,7 +107,7 @@ public:
   bool BeginRender() override;
   bool EndRender() override;
   void PresentRender(bool rendered, bool videoLayer) override;
-  bool ClearBuffers(UTILS::Color color) override;
+  bool ClearBuffers(UTILS::COLOR::Color color) override;
   bool IsExtSupported(const char* extension) const override;
 
   void SetVSync(bool vsync);

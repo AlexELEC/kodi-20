@@ -2,13 +2,13 @@ set(SOURCES ActorProtocol.cpp
             AlarmClock.cpp
             AliasShortcutUtils.cpp
             Archive.cpp
-            auto_buffer.cpp
             Base64.cpp
             BitstreamConverter.cpp
             BitstreamReader.cpp
             BitstreamStats.cpp
             BitstreamWriter.cpp
             BooleanLogic.cpp
+            CharArrayParser.cpp
             CharsetConverter.cpp
             CharsetDetection.cpp
             ColorUtils.cpp
@@ -75,17 +75,16 @@ set(HEADERS ActorProtocol.h
             AlarmClock.h
             AliasShortcutUtils.h
             Archive.h
-            auto_buffer.h
             Base64.h
             BitstreamConverter.h
             BitstreamReader.h
             BitstreamStats.h
             BitstreamWriter.h
             BooleanLogic.h
+            CharArrayParser.h
             CharsetConverter.h
             CharsetDetection.h
             CPUInfo.h
-            Color.h
             ColorUtils.h
             ContentUtils.h
             Crc32.h
