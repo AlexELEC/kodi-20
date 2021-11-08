@@ -7,23 +7,32 @@
  */
 
 #include "TextureCacheJob.h"
+
+#include "FileItem.h"
 #include "ServiceBroker.h"
 #include "TextureCache.h"
+#include "TextureDatabase.h"
+#include "URL.h"
+#include "addons/kodi-dev-kit/include/kodi/c-api/addon-instance/audiodecoder.h"
+#include "commons/ilog.h"
+#include "filesystem/File.h"
 #include "guilib/Texture.h"
+#include "music/MusicThumbLoader.h"
+#include "pictures/Picture.h"
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
-#include "utils/log.h"
-#include "filesystem/File.h"
-#include "pictures/Picture.h"
-#include "utils/URIUtils.h"
+#include "utils/EmbeddedArt.h"
 #include "utils/StringUtils.h"
+#include "utils/URIUtils.h"
+#include "utils/log.h"
 #include "video/VideoThumbLoader.h"
-#include "URL.h"
-#include "FileItem.h"
-#include "music/MusicThumbLoader.h"
-#include "music/tags/MusicInfoTag.h"
 
-#include <inttypes.h>
+#include <cstdlib>
+#include <cstring>
+#include <exception>
+#include <utility>
+
+#include "PlatformDefs.h"
 
 CTextureCacheJob::CTextureCacheJob(const std::string &url, const std::string &oldHash):
   m_url(url),
@@ -60,7 +69,7 @@ bool CTextureCacheJob::DoWork()
   return CacheTexture();
 }
 
-bool CTextureCacheJob::CacheTexture(CTexture** out_texture)
+bool CTextureCacheJob::CacheTexture(std::unique_ptr<CTexture>* out_texture)
 {
   // unwrap the URL as required
   std::string additional_info;
@@ -77,7 +86,7 @@ bool CTextureCacheJob::CacheTexture(CTexture** out_texture)
   else if (m_details.hash == m_oldHash)
     return true;
 
-  CTexture* texture = LoadImage(image, width, height, additional_info, true);
+  std::unique_ptr<CTexture> texture = LoadImage(image, width, height, additional_info, true);
   if (texture)
   {
     if (texture->HasAlpha())
@@ -88,18 +97,16 @@ bool CTextureCacheJob::CacheTexture(CTexture** out_texture)
     CLog::Log(LOGDEBUG, "{} image '{}' to '{}':", m_oldHash.empty() ? "Caching" : "Recaching",
               CURL::GetRedacted(image), m_details.file);
 
-    if (CPicture::CacheTexture(texture, width, height, CTextureCache::GetCachedPath(m_details.file), scalingAlgorithm))
+    if (CPicture::CacheTexture(texture.get(), width, height,
+                               CTextureCache::GetCachedPath(m_details.file), scalingAlgorithm))
     {
       m_details.width = width;
       m_details.height = height;
       if (out_texture) // caller wants the texture
-        *out_texture = texture;
-      else
-        delete texture;
+        *out_texture = std::move(texture);
       return true;
     }
   }
-  delete texture;
   return false;
 }
 
@@ -119,12 +126,12 @@ bool CTextureCacheJob::ResizeTexture(const std::string &url, uint8_t* &result, s
   if (image.empty())
     return false;
 
-  CTexture* texture = LoadImage(image, width, height, additional_info, true);
+  std::unique_ptr<CTexture> texture = LoadImage(image, width, height, additional_info, true);
   if (texture == NULL)
     return false;
 
-  bool success = CPicture::ResizeTexture(image, texture, width, height, result, result_size, scalingAlgorithm);
-  delete texture;
+  bool success = CPicture::ResizeTexture(image, texture.get(), width, height, result, result_size,
+                                         scalingAlgorithm);
 
   return success;
 }
@@ -171,11 +178,11 @@ std::string CTextureCacheJob::DecodeImageURL(const std::string &url, unsigned in
   return image;
 }
 
-CTexture* CTextureCacheJob::LoadImage(const std::string& image,
-                                      unsigned int width,
-                                      unsigned int height,
-                                      const std::string& additional_info,
-                                      bool requirePixels)
+std::unique_ptr<CTexture> CTextureCacheJob::LoadImage(const std::string& image,
+                                                      unsigned int width,
+                                                      unsigned int height,
+                                                      const std::string& additional_info,
+                                                      bool requirePixels)
 {
   if (additional_info == "music")
   { // special case for embedded music images
@@ -200,7 +207,7 @@ CTexture* CTextureCacheJob::LoadImage(const std::string& image,
       && !StringUtils::StartsWithNoCase(file.GetMimeType(), "image/") && !StringUtils::EqualsNoCase(file.GetMimeType(), "application/octet-stream")) // ignore non-pictures
     return NULL;
 
-  CTexture* texture =
+  std::unique_ptr<CTexture> texture =
       CTexture::LoadFromFile(image, width, height, requirePixels, file.GetMimeType());
   if (!texture)
     return NULL;
@@ -226,8 +233,19 @@ std::string CTextureCacheJob::GetImageHash(const std::string &url)
   if (URIUtils::IsProtocol(url,"addons") || URIUtils::IsProtocol(url,"plugin"))
     return "";
 
+  std::string statURL = url;
+
+  // Handle special case about audiodecoder addon music files, e.g. SACD
+  if (StringUtils::EndsWith(URIUtils::GetExtension(url), KODI_ADDON_AUDIODECODER_TRACK_EXT))
+  {
+    std::string addonImageURL = URIUtils::GetDirectory(url);
+    URIUtils::RemoveSlashAtEnd(addonImageURL);
+    if (XFILE::CFile::Exists(addonImageURL))
+      statURL = addonImageURL;
+  }
+
   struct __stat64 st;
-  if (XFILE::CFile::Stat(url, &st) == 0)
+  if (XFILE::CFile::Stat(statURL, &st) == 0)
   {
     int64_t time = st.st_mtime;
     if (!time)
@@ -239,6 +257,7 @@ std::string CTextureCacheJob::GetImageHash(const std::string &url)
     // so set an obviously bad hash
     return "BADHASH";
   }
+
   CLog::Log(LOGDEBUG, "{} - unable to stat url {}", __FUNCTION__, CURL::GetRedacted(url));
   return "";
 }

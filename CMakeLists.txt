@@ -238,6 +238,7 @@ add_custom_command(OUTPUT ${CORE_BUILD_DIR}/xbmc/CompileInfo.cpp
                                             -DAPP_COPYRIGHT_YEARS=${APP_COPYRIGHT_YEARS}
                                             -DAPP_BUILD_DATE=${APP_BUILD_DATE}
                                             -DAPP_SHARED_LIBRARY_SUFFIX="${APP_SHARED_LIBRARY_SUFFIX}"
+                                            -DPYTHON_VERSION=${PYTHON_VERSION}
                                             -Dprefix=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}
                                             -P ${CMAKE_SOURCE_DIR}/cmake/scripts/common/GenerateVersionedFiles.cmake
                    DEPENDS ${CMAKE_SOURCE_DIR}/version.txt
@@ -289,7 +290,7 @@ foreach(skin ${SKINS})
 endforeach()
 
 add_custom_target(pack-skins ALL
-                  DEPENDS TexturePacker::TexturePacker export-files ${XBT_FILES})
+                  DEPENDS TexturePacker::TexturePacker::Executable export-files ${XBT_FILES})
 set_target_properties(pack-skins PROPERTIES FOLDER "Build Utilities")
 
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/system/players/VideoPlayer)
