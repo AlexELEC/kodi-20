@@ -292,7 +292,7 @@ bool CEncoderFFmpeg::WriteFrame()
     if (swr_convert(m_SwrCtx, m_ResampledFrame->extended_data, m_NeededFrames,
                     const_cast<const uint8_t**>(m_BufferFrame->extended_data), m_NeededFrames) < 0)
     {
-      CLog::Log(LOGERROR, "CEncoderFFmpeg::WriteFrame - Error resampling audio");
+      CLog::Log(LOGERROR, "CEncoderFFmpeg::{} - Error resampling audio", __func__);
       return false;
     }
     frame = m_ResampledFrame;
@@ -304,15 +304,17 @@ bool CEncoderFFmpeg::WriteFrame()
 
   m_BufferSize = 0;
 
-  if (encoded < 0) {
-    CLog::Log(LOGERROR, "CEncoderFFmpeg::WriteFrame - Error encoding audio: {}", encoded);
+  if (encoded < 0)
+  {
+    CLog::Log(LOGERROR, "CEncoderFFmpeg::{} - Error encoding audio: {}", __func__, encoded);
     return false;
   }
 
   if (got_output)
   {
-    if (av_write_frame(m_Format, &m_Pkt) < 0) {
-      CLog::Log(LOGERROR, "CEncoderFFMmpeg::WriteFrame - Failed to write the frame data");
+    if (av_write_frame(m_Format, &m_Pkt) < 0)
+    {
+      CLog::Log(LOGERROR, "CEncoderFFMmpeg::{} - Failed to write the frame data", __func__);
       return false;
     }
   }
