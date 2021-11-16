@@ -379,7 +379,7 @@ void CRendererDRMPRIMEGLES::RenderUpdate(
 
   if (m_reloadShaders)
   {
-    m_progressiveShader = std::make_unique<Shaders::YUV2RGBProgressiveShader>(
+    m_progressiveShader = std::make_unique<Shaders::GLES::YUV2RGBProgressiveShader>(
         m_shaderFormat, m_passthroughHDR ? m_srcPrimaries : AVColorPrimaries::AVCOL_PRI_BT709,
         m_srcPrimaries, m_toneMap, m_toneMapMethod);
 

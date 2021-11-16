@@ -17,9 +17,11 @@ extern "C"
 #include <libavutil/mastering_display_metadata.h>
 }
 
-namespace Shaders
+namespace Shaders {
+namespace GLES
 {
 class YUV2RGBProgressiveShader;
+}
 }
 
 namespace KODI
@@ -104,5 +106,5 @@ private:
     AVContentLightMetadata lightMetadata;
   } m_buffers[NUM_BUFFERS];
 
-  std::unique_ptr<Shaders::YUV2RGBProgressiveShader> m_progressiveShader;
+  std::unique_ptr<Shaders::GLES::YUV2RGBProgressiveShader> m_progressiveShader;
 };

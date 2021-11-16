@@ -589,7 +589,7 @@ void CLinuxRendererGLES::UpdateVideoFilter()
     auto shaderCache = renderSystemGLES->GetShaderCache();
 
     auto shader =
-        static_cast<Shaders::ConvolutionFilterShader*>(shaderCache->Find(m_pVideoFilterShader));
+        static_cast<Shaders::GLES::ConvolutionFilterShader*>(shaderCache->Find(m_pVideoFilterShader));
     if (shader)
     {
       delete m_pVideoFilterShader;
@@ -673,7 +673,7 @@ void CLinuxRendererGLES::LoadShaders(int field)
           auto shaderCache = renderSystemGLES->GetShaderCache();
 
           auto shader =
-              static_cast<Shaders::YUV2RGBProgressiveShader*>(shaderCache->Find(m_pYUVProgShader));
+              static_cast<Shaders::GLES::YUV2RGBProgressiveShader*>(shaderCache->Find(m_pYUVProgShader));
           if (shader)
           {
             delete m_pYUVProgShader;
