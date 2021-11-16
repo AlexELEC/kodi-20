@@ -52,6 +52,7 @@
 #define PBO_OFFSET 16
 
 using namespace Shaders;
+using namespace Shaders::GL;
 
 static const GLubyte stipple_weave[] = {
   0x00, 0x00, 0x00, 0x00,
@@ -339,9 +340,9 @@ void CLinuxRendererGL::CalculateTextureSourceRects(int source, int num_planes)
       if(field != FIELD_FULL)
       {
         /* correct for field offsets and chroma offsets */
-        float offset_y = 0.5;
+        float offset_y = 0.5f;
         if(plane != 0)
-          offset_y += 0.5;
+          offset_y += 0.5f;
         if(field == FIELD_BOT)
           offset_y *= -1;
 
@@ -400,7 +401,7 @@ void CLinuxRendererGL::LoadPlane(CYuvPlane& plane, int type,
   if (plane.pbo)
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, plane.pbo);
 
-  int bps = bpp * glFormatElementByteCount(type);
+  int bps = bpp * KODI::UTILS::GL::glFormatElementByteCount(type);
 
   unsigned datatype;
   if (bpp == 2)
@@ -550,7 +551,7 @@ void CLinuxRendererGL::DrawBlackBars()
   Svertex vertices[24];
   GLubyte count = 0;
 
-  m_renderSystem->EnableShader(SM_DEFAULT);
+  m_renderSystem->EnableShader(ShaderMethodGL::SM_DEFAULT);
   GLint posLoc = m_renderSystem->ShaderGetPos();
   GLint uniCol = m_renderSystem->ShaderGetUniCol();
 

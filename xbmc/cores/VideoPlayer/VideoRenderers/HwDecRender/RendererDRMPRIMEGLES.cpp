@@ -266,7 +266,7 @@ void CRendererDRMPRIMEGLES::DrawBlackBars()
   if (!renderSystem)
     return;
 
-  renderSystem->EnableGUIShader(SM_DEFAULT);
+  renderSystem->EnableGUIShader(ShaderMethodGLES::SM_DEFAULT);
   GLint posLoc = renderSystem->GUIShaderGetPos();
   GLint uniCol = renderSystem->GUIShaderGetUniCol();
 

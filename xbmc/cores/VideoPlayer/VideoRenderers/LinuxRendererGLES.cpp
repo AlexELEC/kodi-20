@@ -31,6 +31,7 @@
 #include "windowing/WinSystem.h"
 
 using namespace Shaders;
+using namespace Shaders::GLES;
 
 CLinuxRendererGLES::CLinuxRendererGLES()
 {
@@ -40,16 +41,6 @@ CLinuxRendererGLES::CLinuxRendererGLES()
   m_fullRange = !CServiceBroker::GetWinSystem()->UseLimitedColor();
 
   m_renderSystem = dynamic_cast<CRenderSystemGLES*>(CServiceBroker::GetRenderSystem());
-
-#if HAS_GLES >= 3
-  unsigned int verMajor, verMinor;
-  m_renderSystem->GetRenderVersion(verMajor, verMinor);
-
-  if (verMajor >= 3)
-  {
-    m_pixelStoreKey = GL_UNPACK_ROW_LENGTH;
-  }
-#endif
 
 #if defined (GL_UNPACK_ROW_LENGTH_EXT)
   if (m_renderSystem->IsExtSupported("GL_EXT_unpack_subimage"))
@@ -282,7 +273,7 @@ void CLinuxRendererGLES::LoadPlane(CYuvPlane& plane, int type,
                                    int stride, int bpp, void* data)
 {
   const GLvoid *pixelData = data;
-  int bps = bpp * glFormatElementByteCount(type);
+  int bps = bpp * KODI::UTILS::GL::glFormatElementByteCount(type);
 
   glBindTexture(m_textureTarget, plane.id);
 
@@ -404,7 +395,7 @@ void CLinuxRendererGLES::DrawBlackBars()
   if (!renderSystem)
     return;
 
-  renderSystem->EnableGUIShader(SM_DEFAULT);
+  renderSystem->EnableGUIShader(ShaderMethodGLES::SM_DEFAULT);
   GLint posLoc = renderSystem->GUIShaderGetPos();
   GLint uniCol = renderSystem->GUIShaderGetUniCol();
 
@@ -923,7 +914,7 @@ void CLinuxRendererGLES::RenderSinglePass(int index, int field)
   glActiveTexture(GL_TEXTURE0);
   VerifyGLState();
 
-  Shaders::BaseYUV2RGBGLSLShader *pYUVShader;
+  Shaders::GLES::BaseYUV2RGBGLSLShader* pYUVShader;
   if (field != FIELD_FULL)
   {
     pYUVShader = m_pYUVBobShader;
@@ -1077,7 +1068,7 @@ void CLinuxRendererGLES::RenderToFBO(int index, int field)
   glActiveTexture(GL_TEXTURE0);
   VerifyGLState();
 
-  Shaders::BaseYUV2RGBGLSLShader *pYUVShader = m_pYUVProgShader;
+  Shaders::GLES::BaseYUV2RGBGLSLShader* pYUVShader = m_pYUVProgShader;
   // make sure the yuv shader is loaded and ready to go
   if (!pYUVShader || (!pYUVShader->OK()))
   {

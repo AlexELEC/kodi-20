@@ -13,12 +13,12 @@
 #include "utils/ColorUtils.h"
 #include "utils/log.h"
 
-#include <array>
+#include <map>
 #include <unordered_set>
 
 #include "system_gl.h"
 
-enum ESHADERMETHOD
+enum class ShaderMethodGLES
 {
   SM_DEFAULT,
   SM_TEXTURE,
@@ -31,8 +31,7 @@ enum ESHADERMETHOD
   SM_TEXTURE_RGBA_BLENDCOLOR,
   SM_TEXTURE_RGBA_BOB,
   SM_TEXTURE_RGBA_BOB_OES,
-  SM_TEXTURE_NOALPHA,
-  SM_MAX
+  SM_TEXTURE_NOALPHA
 };
 
 class CShaderCache
@@ -134,7 +133,7 @@ public:
 
   void InitialiseShaders();
   void ReleaseShaders();
-  void EnableGUIShader(ESHADERMETHOD method);
+  void EnableGUIShader(ShaderMethodGLES method);
   void DisableGUIShader();
 
   GLint GUIShaderGetPos();
@@ -162,8 +161,8 @@ protected:
 
   std::string m_RenderExtensions;
 
-  std::array<std::unique_ptr<CGLESShader>, SM_MAX> m_pShader;
-  ESHADERMETHOD m_method = SM_DEFAULT;
+  std::map<ShaderMethodGLES, std::unique_ptr<CGLESShader>> m_pShader;
+  ShaderMethodGLES m_method = ShaderMethodGLES::SM_DEFAULT;
 
   GLint      m_viewPort[4];
 
