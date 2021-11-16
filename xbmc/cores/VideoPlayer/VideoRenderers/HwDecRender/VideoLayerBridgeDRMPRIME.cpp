@@ -8,8 +8,10 @@
 
 #include "VideoLayerBridgeDRMPRIME.h"
 
+#include "ServiceBroker.h"
 #include "cores/VideoPlayer/Buffers/VideoBufferDRMPRIME.h"
 #include "utils/log.h"
+#include "windowing/WinSystem.h"
 #include "windowing/gbm/drm/DRMAtomic.h"
 
 #include <utility>
@@ -36,16 +38,11 @@ void CVideoLayerBridgeDRMPRIME::Disable()
   m_DRM->AddProperty(plane, "CRTC_ID", 0);
 
   // disable HDR metadata
-  auto connector = m_DRM->GetConnector();
-  if (connector->SupportsProperty("HDR_OUTPUT_METADATA"))
-  {
-    m_DRM->AddProperty(connector, "HDR_OUTPUT_METADATA", 0);
-    m_DRM->SetActive(true);
+  auto winSystem = CServiceBroker::GetWinSystem();
+  if (!winSystem)
+    return;
 
-    if (m_hdr_blob_id)
-      drmModeDestroyPropertyBlob(m_DRM->GetFileDescriptor(), m_hdr_blob_id);
-    m_hdr_blob_id = 0;
-  }
+  winSystem->SetHDR(nullptr);
 }
 
 void CVideoLayerBridgeDRMPRIME::Acquire(CVideoBufferDRMPRIME* buffer)
@@ -102,19 +99,46 @@ bool CVideoLayerBridgeDRMPRIME::Map(CVideoBufferDRMPRIME* buffer)
     }
   }
 
-  AVDRMLayerDescriptor* layer = &descriptor->layers[0];
-
-  for (int plane = 0; plane < layer->nb_planes; plane++)
+  for (int layer = 0; layer < descriptor->nb_layers; layer++)
   {
-    int object = layer->planes[plane].object_index;
-    uint32_t handle = buffer->m_handles[object];
-    if (handle && layer->planes[plane].pitch)
+    AVDRMLayerDescriptor* layerDesc = &descriptor->layers[layer];
+    for (int plane = 0; plane < layerDesc->nb_planes; plane++)
     {
-      handles[plane] = handle;
-      pitches[plane] = layer->planes[plane].pitch;
-      offsets[plane] = layer->planes[plane].offset;
-      modifier[plane] = descriptor->objects[object].format_modifier;
+      AVDRMPlaneDescriptor* planeDesc = &layerDesc->planes[plane];
+      AVDRMObjectDescriptor* objectDesc = &descriptor->objects[planeDesc->object_index];
+
+      // fix index for cases where there are multiple layers but one plane
+      if (descriptor->nb_layers > 1 && layerDesc->nb_planes == 1)
+        plane = layer;
+
+      handles[plane] = buffer->m_handles[planeDesc->object_index];
+      pitches[plane] = planeDesc->pitch;
+      offsets[plane] = planeDesc->offset;
+      modifier[plane] = objectDesc->format_modifier;
     }
+  }
+
+  uint32_t format = descriptor->layers[0].format;
+
+  if (descriptor->nb_layers == 2)
+  {
+    if (descriptor->layers[0].format == DRM_FORMAT_R8 &&
+        descriptor->layers[1].format == DRM_FORMAT_GR88)
+      format = DRM_FORMAT_NV12;
+
+    if (descriptor->layers[0].format == DRM_FORMAT_R16 &&
+        descriptor->layers[1].format == DRM_FORMAT_GR1616)
+      format = DRM_FORMAT_P010;
+  }
+
+  if (descriptor->nb_layers == 3)
+  {
+    if (descriptor->layers[0].format == DRM_FORMAT_R8 &&
+        descriptor->layers[1].format == DRM_FORMAT_R8 &&
+        descriptor->layers[2].format == DRM_FORMAT_R8)
+      format = DRM_FORMAT_YUV420;
+
+    // YUV420P10 isn't supported by any hardware that I've seen
   }
 
   if (modifier[0] && modifier[0] != DRM_FORMAT_MOD_INVALID)
@@ -122,8 +146,8 @@ bool CVideoLayerBridgeDRMPRIME::Map(CVideoBufferDRMPRIME* buffer)
 
   // add the video frame FB
   ret = drmModeAddFB2WithModifiers(m_DRM->GetFileDescriptor(), buffer->GetWidth(),
-                                   buffer->GetHeight(), layer->format, handles, pitches, offsets,
-                                   modifier, &buffer->m_fb_id, flags);
+                                   buffer->GetHeight(), format, handles, pitches, offsets, modifier,
+                                   &buffer->m_fb_id, flags);
   if (ret < 0)
   {
     CLog::Log(LOGERROR, "CVideoLayerBridgeDRMPRIME::{} - failed to add fb {}, ret = {}",
@@ -161,75 +185,11 @@ void CVideoLayerBridgeDRMPRIME::Configure(CVideoBufferDRMPRIME* buffer)
 {
   const VideoPicture& picture = buffer->GetPicture();
 
-  auto plane = m_DRM->GetVideoPlane();
+  auto winSystem = CServiceBroker::GetWinSystem();
+  if (!winSystem)
+    return;
 
-  bool result;
-  uint64_t value;
-  std::tie(result, value) = plane->GetPropertyValue("COLOR_ENCODING", GetColorEncoding(picture));
-  if (result)
-    m_DRM->AddProperty(plane, "COLOR_ENCODING", value);
-
-  std::tie(result, value) = plane->GetPropertyValue("COLOR_RANGE", GetColorRange(picture));
-  if (result)
-    m_DRM->AddProperty(plane, "COLOR_RANGE", value);
-
-  auto connector = m_DRM->GetConnector();
-  if (connector->SupportsProperty("HDR_OUTPUT_METADATA"))
-  {
-    m_hdr_metadata.metadata_type = HDMI_STATIC_METADATA_TYPE1;
-    m_hdr_metadata.hdmi_metadata_type1.eotf = GetEOTF(picture);
-    m_hdr_metadata.hdmi_metadata_type1.metadata_type = HDMI_STATIC_METADATA_TYPE1;
-
-    if (m_hdr_blob_id)
-      drmModeDestroyPropertyBlob(m_DRM->GetFileDescriptor(), m_hdr_blob_id);
-    m_hdr_blob_id = 0;
-
-    if (m_hdr_metadata.hdmi_metadata_type1.eotf)
-    {
-      const AVMasteringDisplayMetadata* mdmd = GetMasteringDisplayMetadata(picture);
-      if (mdmd && mdmd->has_primaries)
-      {
-        // Convert to unsigned 16-bit values in units of 0.00002,
-        // where 0x0000 represents zero and 0xC350 represents 1.0000
-        for (int i = 0; i < 3; i++)
-        {
-          m_hdr_metadata.hdmi_metadata_type1.display_primaries[i].x =
-              std::round(av_q2d(mdmd->display_primaries[i][0]) * 50000.0);
-          m_hdr_metadata.hdmi_metadata_type1.display_primaries[i].y =
-              std::round(av_q2d(mdmd->display_primaries[i][1]) * 50000.0);
-        }
-        m_hdr_metadata.hdmi_metadata_type1.white_point.x =
-            std::round(av_q2d(mdmd->white_point[0]) * 50000.0);
-        m_hdr_metadata.hdmi_metadata_type1.white_point.y =
-            std::round(av_q2d(mdmd->white_point[1]) * 50000.0);
-      }
-      if (mdmd && mdmd->has_luminance)
-      {
-        // Convert to unsigned 16-bit value in units of 1 cd/m2,
-        // where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2
-        m_hdr_metadata.hdmi_metadata_type1.max_display_mastering_luminance =
-            std::round(av_q2d(mdmd->max_luminance));
-
-        // Convert to unsigned 16-bit value in units of 0.0001 cd/m2,
-        // where 0x0001 represents 0.0001 cd/m2 and 0xFFFF represents 6.5535 cd/m2
-        m_hdr_metadata.hdmi_metadata_type1.min_display_mastering_luminance =
-            std::round(av_q2d(mdmd->min_luminance) * 10000.0);
-      }
-
-      const AVContentLightMetadata* clmd = GetContentLightMetadata(picture);
-      if (clmd)
-      {
-        m_hdr_metadata.hdmi_metadata_type1.max_cll = clmd->MaxCLL;
-        m_hdr_metadata.hdmi_metadata_type1.max_fall = clmd->MaxFALL;
-      }
-
-      drmModeCreatePropertyBlob(m_DRM->GetFileDescriptor(), &m_hdr_metadata, sizeof(m_hdr_metadata),
-                                &m_hdr_blob_id);
-    }
-
-    m_DRM->AddProperty(connector, "HDR_OUTPUT_METADATA", m_hdr_blob_id);
-    m_DRM->SetActive(true);
-  }
+  winSystem->SetHDR(&picture);
 }
 
 void CVideoLayerBridgeDRMPRIME::SetVideoPlane(CVideoBufferDRMPRIME* buffer, const CRect& destRect)

@@ -44,6 +44,7 @@ private:
   AVStream* m_Stream{nullptr};
   AVSampleFormat m_InFormat;
   AVSampleFormat m_OutFormat;
+  AVPacket m_Pkt;
 
   /* From libavformat/avio.h:
    * The buffer size is very important for performance.
