@@ -34,6 +34,7 @@ enum hdmi_eotf
   HDMI_EOTF_BT_2100_HLG,
 };
 
+std::string GetColorimetry(const VideoPicture& picture);
 std::string GetColorEncoding(const VideoPicture& picture);
 std::string GetColorRange(const VideoPicture& picture);
 uint8_t GetEOTF(const VideoPicture& picture);
@@ -75,14 +76,14 @@ public:
   void SetRef(AVFrame* frame);
   void Unref();
 
-  AVDRMFrameDescriptor* GetDescriptor() const override
-  {
-    return reinterpret_cast<AVDRMFrameDescriptor*>(m_pFrame->data[0]);
-  }
+  AVDRMFrameDescriptor* GetDescriptor() const override;
   bool IsValid() const override;
+  bool AcquireDescriptor() override;
+  void ReleaseDescriptor() override;
 
 protected:
   AVFrame* m_pFrame = nullptr;
+  AVFrame* m_pMapFrame = nullptr;
 };
 
 class CVideoBufferPoolDRMPRIMEFFmpeg : public IVideoBufferPool
