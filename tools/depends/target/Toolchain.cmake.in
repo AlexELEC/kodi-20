@@ -36,7 +36,7 @@ if(CORE_SYSTEM_NAME STREQUAL darwin_embedded)
     set(CMAKE_MACOSX_BUNDLE YES)
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO")
     # Need to set this attribute to "" in order to
-    # complety disable code signing
+    # completely disable code signing
     # see: https://gitlab.kitware.com/cmake/cmake/issues/19112
     set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
     if(CORE_PLATFORM_NAME STREQUAL tvos)
@@ -68,10 +68,9 @@ set(CMAKE_STRIP @STRIP@ CACHE PATH "strip binary" FORCE)
 set(CMAKE_OBJDUMP @OBJDUMP@ CACHE FILEPATH "Objdump")
 set(CMAKE_RANLIB @RANLIB@ CACHE FILEPATH "Ranlib")
 
-if(PROJECT_SOURCE_DIR MATCHES "tools/depends")
-  if(@use_ccache@ STREQUAL "yes")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "@CCACHE@")
-  endif()
+if(NOT "@use_ccache@" STREQUAL "")
+  set(CMAKE_CXX_COMPILER_LAUNCHER @CCACHE@)
+  set(CMAKE_C_COMPILER_LAUNCHER @CCACHE@)
 endif()
 
 # where is the target environment

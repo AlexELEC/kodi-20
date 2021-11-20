@@ -885,7 +885,7 @@ extern "C"
       return ret;
     }
 
-    // we have a valid data struture. get next item!
+    // we have a valid data structure. get next item!
     int iItem = vecDirsOpen[found].curr_index;
     if (iItem+1 < vecDirsOpen[found].items.Size()) // we have a winner!
     {
@@ -1429,7 +1429,7 @@ extern "C"
       if (pFile != NULL)
       {
         int len = strlen(tmp);
-        // replace all '\n' occurences with '\r\n'...
+        // replace all '\n' occurrences with '\r\n'...
         char tmp2[2048];
         int j = 0;
         for (int i = 0; i < len; i++)
@@ -1480,7 +1480,7 @@ extern "C"
 
   int dll_fgetpos(FILE* stream, fpos_t* pos)
   {
-    fpos64_t tmpPos;
+    fpos64_t tmpPos = {};
     int ret;
 
     ret = dll_fgetpos64(stream, &tmpPos);

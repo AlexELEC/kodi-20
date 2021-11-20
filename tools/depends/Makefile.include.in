@@ -9,6 +9,7 @@ TARBALLS_LOCATION=@use_tarballs@
 PLATFORM=@deps_dir@
 HOST=@use_host@
 BUILD=@use_build@
+BUILD_CPU=@use_buildcpu@
 CPU=@use_cpu@
 MESON_CPU=@meson_cpu@
 MESON_SYSTEM=@meson_system@
@@ -27,6 +28,7 @@ TARGET_PLATFORM=@target_platform@
 RENDER_SYSTEM=@app_rendersystem@
 AAPT=@AAPT@
 DX=@DX@
+D8=@D8@
 ZIPALIGN=@ZIPALIGN@
 
 HAS_ZLIB=@has_zlib@
@@ -77,15 +79,16 @@ ifneq (@use_build_toolchain@,)
 endif
 PATH:=@prefix@/@tool_dir@/bin:$(PATH)
 LD_FOR_BUILD=@LD_FOR_BUILD@
+CC_BINARY_FOR_BUILD=@CC_FOR_BUILD@
+CXX_BINARY_FOR_BUILD=@CXX_FOR_BUILD@
 ifneq (@use_ccache@,yes)
   CC_FOR_BUILD=@CC_FOR_BUILD@
   CXX_FOR_BUILD=@CXX_FOR_BUILD@
 else
   CC_FOR_BUILD=@CCACHE@ @CC_FOR_BUILD@
   CXX_FOR_BUILD=@CCACHE@ @CXX_FOR_BUILD@
+  CCACHE=@CCACHE@
 endif
-CC_BINARY_FOR_BUILD=@CC_FOR_BUILD@
-CXX_BINARY_FOR_BUILD=@CXX_FOR_BUILD@
 AR_FOR_BUILD=@AR_FOR_BUILD@
 RANLIB_FOR_BUILD=@RANLIB_FOR_BUILD@
 AS_FOR_BUILD=@AS_FOR_BUILD@

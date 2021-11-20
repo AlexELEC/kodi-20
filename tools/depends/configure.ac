@@ -143,6 +143,7 @@ fi
 
 use_host=$host_alias
 use_build=$build_cpu-$build_vendor-$build_os
+use_buildcpu=$build_cpu
 
 cross_compiling="yes"
 if test "x$host" = "x$build"; then
@@ -171,20 +172,21 @@ case $build in
   *darwin*)
     build_os="osx"
     if test "x$build_cpu" = "xx86_64"; then
-      host_includes=-mmacosx-version-min=10.13
+      host_includes="-arch x86_64 -mmacosx-version-min=10.13"
     else
-      host_includes=-mmacosx-version-min=11.0
+      host_includes="-arch arm64 -mmacosx-version-min=11.0"
     fi
-    use_xcodepath=`xcode-select -print-path`
-    use_build_toolchain=$use_xcodepath
-    use_xcodebuild=$use_xcodepath/usr/bin/xcodebuild
-    AC_MSG_RESULT(found xcodebuild at $use_xcodebuild)
+    use_xcrun=xcrun
 
     # acquire build platform (native) sdk sysroot.
     build_platform=macosx
-    native_sdk_path=[`$use_xcodebuild -version -sdk $build_platform | grep ^Path | awk '{ print $2}'`]
+    native_sdk_path=[`$use_xcrun --show-sdk-path`]
     host_includes+=" -isysroot $native_sdk_path"
 
+    CC_FOR_BUILD=[`$use_xcrun --find clang`]
+    use_build_toolchain=[`$CC_FOR_BUILD --version | grep InstalledDir | awk '{ print $2}'`]
+
+    # Android NDK currently only x86_64 prebuilts - Arctic Fox 2020.3.1
     android_toolchain_name="darwin-x86_64"
 
     if test "x$prefix" = "xNONE"; then
@@ -204,14 +206,13 @@ fi
 AC_PATH_PROG([RANLIB_FOR_BUILD], [ranlib], ranlib, $PATH_FOR_BUILD)
 AC_PATH_PROG([LD_FOR_BUILD], [ld], ld, $PATH_FOR_BUILD)
 AC_PATH_PROG([AR_FOR_BUILD], [ar], ar, $PATH_FOR_BUILD)
-AC_PATH_PROG([READELF_FOR_BUILD], [readelf], readelf, $PATH_FOR_BUILD)
+AC_PATH_PROG([READELF_FOR_BUILD], [readelf],, $PATH_FOR_BUILD)
 AC_PATH_PROG([STRIP_FOR_BUILD], [strip], strip, $PATH_FOR_BUILD)
 AC_PATH_PROG([AS_FOR_BUILD], [as], as, $PATH_FOR_BUILD)
 AC_PATH_PROG([NM_FOR_BUILD], [nm], nm, $PATH_FOR_BUILD)
 AC_PATH_PROG([OBJDUMP_FOR_BUILD], [objdump], objdump, $PATH_FOR_BUILD)
-AC_PATH_PROG([CC_FOR_BUILD],[gcc llvm-gcc $platform_cc], gcc, $PATH_FOR_BUILD)
-AC_PATH_PROG([CXX_FOR_BUILD],[g++ llvm-g++ $platform_cxx], g++, $PATH_FOR_BUILD)
-
+AC_PATH_PROG([CC_FOR_BUILD],[clang gcc llvm-gcc], gcc, $PATH_FOR_BUILD)
+AC_PATH_PROG([CXX_FOR_BUILD],[clang++ g++ llvm-g++], g++, $PATH_FOR_BUILD)
 
 platform_cc=gcc
 platform_cxx=g++
@@ -221,6 +222,9 @@ case $host in
     use_toolchain="${use_toolchain:-$use_ndk_path/toolchains/llvm/prebuilt/$android_toolchain_name}"
     platform_cc=$use_host$use_ndk_api-clang
     platform_cxx=$use_host$use_ndk_api-clang++
+
+    platform_tool_prefix=llvm-
+
     case $host in
       arm*-*linux-android*)
         platform_cc=armv7a-linux-androideabi$use_ndk_api-clang
@@ -228,25 +232,25 @@ case $host in
     esac
   ;;
   *darwin*)
-    use_toolchain="${use_xcodepath}/Toolchains/XcodeDefault.xctoolchain"
-    platform_cc=clang
+    CC=[`$use_xcrun --find clang`]
     platform_cxx=clang++
+    use_toolchain=[`$CC --version | grep InstalledDir | awk '{ print $2}'`]
 esac
 
-if test -n $use_build_toolchain; then
+if test -n $use_toolchain; then
   PATH_FOR_HOST=$use_toolchain:$use_toolchain/usr/bin:$use_toolchain/bin:$PATH
 else
   PATH_FOR_HOST=$PATH
 fi
 
-AC_PATH_TOOL([RANLIB], [ranlib],, $PATH_FOR_HOST)
-AC_PATH_TOOL([LD], [ld],, $PATH_FOR_HOST)
-AC_PATH_TOOL([AR], [ar],, $PATH_FOR_HOST)
-AC_PATH_TOOL([READELF], [readelf],, $PATH_FOR_HOST)
-AC_PATH_TOOL([STRIP], [strip],, $PATH_FOR_HOST)
-AC_PATH_TOOL([AS], [as],, $PATH_FOR_HOST)
-AC_PATH_TOOL([NM], [nm],, $PATH_FOR_HOST)
-AC_PATH_TOOL([OBJDUMP], [objdump],, $PATH_FOR_HOST)
+AC_PATH_TOOL([RANLIB], [${platform_tool_prefix}ranlib],, $PATH_FOR_HOST)
+AC_PATH_TOOL([LD], [${platform_tool_prefix}ld],, $PATH_FOR_HOST)
+AC_PATH_TOOL([AR], [${platform_tool_prefix}ar],, $PATH_FOR_HOST)
+AC_PATH_TOOL([READELF], [${platform_tool_prefix}readelf],, $PATH_FOR_HOST)
+AC_PATH_TOOL([STRIP], [${platform_tool_prefix}strip],, $PATH_FOR_HOST)
+AC_PATH_TOOL([AS], [${platform_tool_prefix}as],, $PATH_FOR_HOST)
+AC_PATH_TOOL([NM], [${platform_tool_prefix}nm],, $PATH_FOR_HOST)
+AC_PATH_TOOL([OBJDUMP], [${platform_tool_prefix}objdump],, $PATH_FOR_HOST)
 AC_PATH_TOOL([CC],[$platform_cc],,$PATH_FOR_HOST)
 AC_PATH_TOOL([CXX],[$platform_cxx],,$PATH_FOR_HOST)
 
@@ -383,17 +387,10 @@ case $host in
       ;;
     esac
 
-    found_sdk_version=[`$use_xcodebuild -showsdks | grep "\-sdk $target_platform" | awk '{ print $2}'`]
+    found_sdk_version=[`$use_xcrun --sdk $target_platform --show-sdk-version`]
     use_sdk="${use_sdk:-$found_sdk_version}"
+    use_sdk_path=$($use_xcrun --sdk $target_platform --show-sdk-path)
     sdk_name=$target_platform$use_sdk
-
-    use_sdk_path=$($use_xcodebuild -version -sdk $sdk_name Path 2>&1)
-    # test if sdk is available to xcodebuild, otherwise error out
-    valid_sdk=[`echo $use_sdk_path | grep "error:"`]
-
-    if test "x$valid_sdk" != "x"; then
-      AC_MSG_ERROR("invalid SDK version provided (--with-sdk=$use_sdk) is not available in xcodebuild -showsdks")
-    fi
 
     case $host in
       x86_64-apple-darwin)
@@ -538,9 +535,12 @@ if test "$platform_os" == "android"; then
     AC_MSG_ERROR("Missing program: aapt")
   fi
 
-  AC_PATH_PROG(DX,dx,"no",$build_tools_path)
-  if test "x$DX" = "xno" ; then
-    AC_MSG_ERROR("Missing program: dx")
+  AC_PATH_PROG(D8,d8,"no",$build_tools_path)
+  if test "x$D8" = "xno" ; then
+    AC_PATH_PROG(DX,dx,"no",$build_tools_path)
+    if test "x$DX" = "xno" ; then
+      AC_MSG_ERROR("Missing program: dx or d8")
+    fi
   fi
 
   AC_PATH_PROG(ZIPALIGN,zipalign,"no",$build_tools_path)
@@ -647,6 +647,7 @@ AC_SUBST(use_host)
 AC_SUBST(use_build)
 AC_SUBST(deps_dir)
 AC_SUBST(tool_dir)
+AC_SUBST(use_buildcpu)
 AC_SUBST(use_cpu)
 AC_SUBST(use_toolchain)
 AC_SUBST(use_build_toolchain)
@@ -677,7 +678,7 @@ AC_OUTPUT
 
 if test "$platform_os" == "darwin_embedded"; then
   if test "$use_platform" = "ios"; then
-    simulator_sdk_path=[`$use_xcodebuild -version -sdk iphonesimulator$use_sdk  | grep ^Path | awk '{ print $2}'`]
+    simulator_sdk_path=[`$use_xcrun --sdk iphonesimulator --show-sdk-path`]
     echo -e "use simulator:\t $simulator_sdk_path"
   fi
 fi
@@ -692,6 +693,9 @@ cp -vf native/config.site.native $prefix/$tool_dir/share/config.site
 echo -e "\n\n#------- configuration -------#"
 echo -e "ccache:\t\t $use_ccache"
 echo -e "build type:\t\t $build_type"
+echo -e "build system:\t $use_build"
+echo -e "build cpu:\t\t $use_buildcpu"
+echo -e "build includes:\t $host_includes"
 echo -e "toolchain:\t\t $use_toolchain"
 echo -e "cpu:\t\t\t $use_cpu"
 echo -e "host:\t\t $use_host"
