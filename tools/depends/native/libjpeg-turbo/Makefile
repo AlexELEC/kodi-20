@@ -5,12 +5,12 @@ DEPS= ../../Makefile.include Makefile 01-disable-executables.patch
 
 # lib name, version
 LIBNAME=libjpeg-turbo
-VERSION=2.0.4
+VERSION=2.1.1
 SOURCE=$(LIBNAME)-$(VERSION)
 ARCHIVE=$(LIBNAME)-$(VERSION).tar.gz
 
 CMAKE_OPTIONS := -DCMAKE_TOOLCHAIN_FILE= \
-                 -DCMAKE_ASM_NASM_COMPILER:FILEPATH=$(NATIVEPREFIX)/bin/yasm \
+                 -DCMAKE_ASM_NASM_COMPILER:FILEPATH=$(NATIVEPREFIX)/bin/nasm \
                  -DENABLE_SHARED:BOOL=OFF \
                  -DWITH_JPEG8:BOOL=ON \
                  -DCMAKE_C_COMPILER="$(CC_BINARY_FOR_BUILD)" \
