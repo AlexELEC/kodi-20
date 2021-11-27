@@ -282,13 +282,9 @@ bool CEncoderFFmpeg::WriteFrame()
   int encoded, got_output;
   AVFrame* frame;
 
-  AVPacket* pkt = av_packet_alloc();
-  if (!pkt)
-  {
-    CLog::Log(LOGERROR, "CEncoderFFmpeg::{} - av_packet_alloc failed: {}", __func__,
-              strerror(errno));
-    return false;
-  }
+  av_init_packet(&m_Pkt);
+  m_Pkt.data = NULL;
+  m_Pkt.size = 0;
 
   if (m_NeedConversion)
   {
@@ -297,7 +293,6 @@ bool CEncoderFFmpeg::WriteFrame()
                     const_cast<const uint8_t**>(m_BufferFrame->extended_data), m_NeededFrames) < 0)
     {
       CLog::Log(LOGERROR, "CEncoderFFmpeg::{} - Error resampling audio", __func__);
-      av_packet_free(&pkt);
       return false;
     }
     frame = m_ResampledFrame;
@@ -305,28 +300,26 @@ bool CEncoderFFmpeg::WriteFrame()
   else
     frame = m_BufferFrame;
 
-  encoded = avcodec_encode_audio2(m_CodecCtx, pkt, frame, &got_output);
+  encoded = avcodec_encode_audio2(m_CodecCtx, &m_Pkt, frame, &got_output);
 
   m_BufferSize = 0;
 
   if (encoded < 0)
   {
     CLog::Log(LOGERROR, "CEncoderFFmpeg::{} - Error encoding audio: {}", __func__, encoded);
-    av_packet_free(&pkt);
     return false;
   }
 
   if (got_output)
   {
-    if (av_write_frame(m_Format, pkt) < 0)
+    if (av_write_frame(m_Format, &m_Pkt) < 0)
     {
       CLog::Log(LOGERROR, "CEncoderFFMmpeg::{} - Failed to write the frame data", __func__);
-      av_packet_free(&pkt);
       return false;
     }
   }
 
-  av_packet_free(&pkt);
+  av_packet_unref(&m_Pkt);
 
   return true;
 }
