@@ -302,11 +302,17 @@ case $host in
         fi
         meson_cpu="aarch64"
       ;;
-      i*86*-linux-android*|x86_64*-linux-android*)
+      i*86*-linux-android*)
         if test "x$use_cpu" = "xauto"; then
           use_cpu=$host_cpu
         fi
         meson_cpu="x86"
+      ;;
+      x86_64*-linux-android*)
+        if test "x$use_cpu" = "xauto"; then
+          use_cpu=$host_cpu
+        fi
+        meson_cpu="x86_64"
       ;;
       *)
         AC_MSG_ERROR(unsupported host ($use_host))
@@ -365,9 +371,8 @@ case $host in
 
     meson_system="darwin"
 
-    platform_cflags="-fheinous-gnu-extensions -no-cpp-precomp"
+    platform_cflags="-fheinous-gnu-extensions"
     platform_ldflags="-Wl,-search_paths_first"
-    platform_cxxflags="-no-cpp-precomp"
 
     case $use_platform in
       tvos)
