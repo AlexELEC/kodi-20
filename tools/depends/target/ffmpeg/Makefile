@@ -33,6 +33,7 @@ ifeq ($(CROSS_COMPILING), yes)
 endif
 ifeq ($(OS), linux)
   ffmpg_config += --target-os=$(OS)
+  ffmpg_config += --enable-libdrm
 endif
 ifeq ($(OS), android)
   ifeq ($(findstring arm64, $(CPU)), arm64)
