@@ -351,10 +351,11 @@ void CRenderer::CreateSubtitlesStyle()
   m_overlayStyle->blur = settings->GetInt(CSettings::SETTING_SUBTITLES_BLUR);
 }
 
-COverlay* CRenderer::ConvertLibass(CDVDOverlayLibass* o,
-                                   double pts,
-                                   bool updateStyle,
-                                   std::shared_ptr<struct KODI::SUBTITLES::style> overlayStyle)
+COverlay* CRenderer::ConvertLibass(
+    CDVDOverlayLibass* o,
+    double pts,
+    bool updateStyle,
+    const std::shared_ptr<struct KODI::SUBTITLES::style>& overlayStyle)
 {
   KODI::SUBTITLES::renderOpts rOpts;
 
@@ -388,11 +389,29 @@ COverlay* CRenderer::ConvertLibass(CDVDOverlayLibass* o,
   // Set position of subtitles based on video calibration settings
   if (subAlign == SUBTITLE_ALIGN_MANUAL)
   {
-    rOpts.usePosition = true;
-    RESOLUTION_INFO res;
-    res = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(
-        CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution());
-    rOpts.position = 100.0 - (double)(res.iSubtitles - res.Overscan.top) * 100 / res.iHeight;
+    if (o->IsForcedMargins())
+    {
+      // rOpts.position can invalidate the text positions to subtitles that make
+      // use of margins to position text on the screen then in this case
+      // we allow to set it only when position overrides are enabled
+      int overrideStyles = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+          CSettings::SETTING_SUBTITLES_OVERRIDESTYLES);
+      if (overrideStyles == (int)KODI::SUBTITLES::OverrideStyles::POSITIONS ||
+          overrideStyles == (int)KODI::SUBTITLES::OverrideStyles::STYLES_POSITIONS)
+        rOpts.usePosition = true;
+    }
+    else
+    {
+      rOpts.usePosition = true;
+    }
+    if (rOpts.usePosition)
+    {
+      RESOLUTION_INFO res;
+      res = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(
+          CServiceBroker::GetWinSystem()->GetGfxContext().GetVideoResolution());
+      rOpts.position =
+          100.0 - static_cast<double>(res.iSubtitles - res.Overscan.top) * 100 / res.iHeight;
+    }
   }
 
   // Set the horizontal text alignment (currently used to improve readability on CC subtitles only)
