@@ -44,7 +44,6 @@ private:
   AVCodecContext *m_CodecCtx;
   SwrContext *m_SwrCtx;
   CAEChannelInfo m_Layout;
-  AVPacket m_Pkt;
   uint8_t m_Buffer[8 + AV_INPUT_BUFFER_MIN_SIZE];
   int m_BufferSize = 0;
   int m_OutputSize = 0;
@@ -53,4 +52,3 @@ private:
   unsigned int  m_NeededFrames = 0;
   bool m_NeedConversion = false;
 };
-
