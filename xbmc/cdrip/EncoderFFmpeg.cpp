@@ -344,7 +344,7 @@ bool CEncoderFFmpeg::WriteFrame()
     CLog::Log(LOGERROR, "CEncoderFFmpeg::{} - {}", __func__, caught.what());
   }
 
-  av_packet_unref(&m_Pkt);
+  av_packet_free(&pkt);
 
   return (err) ? false : true;
 }
