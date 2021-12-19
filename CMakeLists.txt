@@ -134,7 +134,7 @@ set(required_deps ASS
                   Fmt
                   FreeType
                   FriBidi
-                  fstrcmp
+                  Fstrcmp
                   HarfBuzz
                   Iconv
                   KissFFT
@@ -250,6 +250,10 @@ add_library(compileinfo OBJECT ${CORE_BUILD_DIR}/xbmc/CompileInfo.cpp)
 set_target_properties(compileinfo PROPERTIES FOLDER "Build Utilities")
 target_compile_options(compileinfo PRIVATE "${SYSTEM_DEFINES} ${ARCH_DEFINES}")
 add_dependencies(compileinfo fmt)
+
+if(NOT MSVC)
+  target_compile_options(compileinfo PUBLIC ${CORE_COMPILE_OPTIONS})
+endif()
 
 # RC File
 if(WIN32)
