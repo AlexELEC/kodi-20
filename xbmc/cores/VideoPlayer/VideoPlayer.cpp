@@ -853,7 +853,7 @@ bool CVideoPlayer::OpenDemuxStream()
   int64_t len = m_pInputStream->GetLength();
   int64_t tim = m_pDemuxer->GetStreamLength();
   if (len > 0 && tim > 0)
-    m_pInputStream->SetReadRate((unsigned int) (len * 1000 / tim));
+    m_pInputStream->SetReadRate(static_cast<uint32_t>(len * 1000 / tim));
 
   m_offset_pts = 0;
 
@@ -1278,9 +1278,14 @@ void CVideoPlayer::Prepare()
                   __FUNCTION__, starttime);
       }
 
-      const std::string strTimeString =
-          StringUtils::SecondsToTimeString(edit.end / 1000, TIME_FORMAT_MM_SS);
-      CGUIDialogKaiToast::QueueNotification(g_localizeStrings.Get(25011), strTimeString);
+      const std::shared_ptr<CAdvancedSettings> advancedSettings =
+          CServiceBroker::GetSettingsComponent()->GetAdvancedSettings();
+      if (advancedSettings && advancedSettings->m_EdlDisplayCommbreakNotifications)
+      {
+        const std::string timeString =
+            StringUtils::SecondsToTimeString(edit.end / 1000, TIME_FORMAT_MM_SS);
+        CGUIDialogKaiToast::QueueNotification(g_localizeStrings.Get(25011), timeString);
+      }
     }
   }
 
@@ -1742,10 +1747,10 @@ bool CVideoPlayer::GetCachingTimes(double& level, double& delay, double& offset)
   if (!m_pInputStream->GetCacheStatus(&status))
     return false;
 
-  const uint64_t &cached = status.forward;
-  const unsigned &currate = status.currate;
-  const unsigned &maxrate = status.maxrate;
-  const bool &lowspeed = status.lowspeed;
+  const uint64_t& cached = status.forward;
+  const uint32_t& currate = status.currate;
+  const uint32_t& maxrate = status.maxrate;
+  const uint32_t& lowrate = status.lowrate;
 
   int64_t length = m_pInputStream->GetLength();
   int64_t remain = length - m_pInputStream->Seek(0, SEEK_CUR);
@@ -1770,9 +1775,9 @@ bool CVideoPlayer::GetCachingTimes(double& level, double& delay, double& offset)
 
   delay = cache_left - play_left;
 
-  if (lowspeed)
+  if (lowrate > 0)
   {
-    CLog::Log(LOGDEBUG, "Readrate {} is too low with {} required", currate, maxrate);
+    CLog::Log(LOGDEBUG, "Readrate {} was too low with {} required", lowrate, maxrate);
     level = -1.0;                          /* buffer is full & our read rate is too low  */
   }
   else
@@ -2363,9 +2368,14 @@ void CVideoPlayer::CheckAutoSceneSkip()
     // marker for commbrak may be inaccurate. allow user to skip into break from the back
     if (m_playSpeed >= 0 && m_Edl.GetLastEditTime() != edit.start && clock < edit.end - 1000)
     {
-      const std::string strTimeString =
-          StringUtils::SecondsToTimeString((edit.end - edit.start) / 1000, TIME_FORMAT_MM_SS);
-      CGUIDialogKaiToast::QueueNotification(g_localizeStrings.Get(25011), strTimeString);
+      const std::shared_ptr<CAdvancedSettings> advancedSettings =
+          CServiceBroker::GetSettingsComponent()->GetAdvancedSettings();
+      if (advancedSettings && advancedSettings->m_EdlDisplayCommbreakNotifications)
+      {
+        const std::string timeString =
+            StringUtils::SecondsToTimeString((edit.end - edit.start) / 1000, TIME_FORMAT_MM_SS);
+        CGUIDialogKaiToast::QueueNotification(g_localizeStrings.Get(25011), timeString);
+      }
 
       m_Edl.SetLastEditTime(edit.start);
 
