@@ -303,6 +303,8 @@ bool CPlayerGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
         *fallback = item->GetArt("icon");
       return true;
     case PLAYER_EDITLIST:
+    case PLAYER_CUTS:
+    case PLAYER_SCENE_MARKERS:
     case PLAYER_CUTLIST:
     case PLAYER_CHAPTERS:
       value = GetContentRanges(info.m_info);
@@ -331,6 +333,9 @@ bool CPlayerGUIInfo::GetLabel(std::string& value, const CFileItem *item, int con
       return true;
     case PLAYER_PROCESS_VIDEOHEIGHT:
       value = StringUtils::FormatNumber(CServiceBroker::GetDataCacheCore().GetVideoHeight());
+      return true;
+    case PLAYER_PROCESS_VIDEOSCANTYPE:
+      value = CServiceBroker::GetDataCacheCore().IsVideoInterlaced() ? "i" : "p";
       return true;
     case PLAYER_PROCESS_AUDIODECODER:
       value = CServiceBroker::GetDataCacheCore().GetAudioDecoderName();
@@ -525,6 +530,9 @@ bool CPlayerGUIInfo::GetBool(bool& value, const CGUIListItem *gitem, int context
     case PLAYER_FRAMEADVANCE:
       value = CServiceBroker::GetDataCacheCore().IsFrameAdvance();
       return true;
+    case PLAYER_HAS_SCENE_MARKERS:
+      value = !CServiceBroker::GetDataCacheCore().GetSceneMarkers().empty();
+      return true;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     // PLAYLIST_*
@@ -623,6 +631,12 @@ std::string CPlayerGUIInfo::GetContentRanges(int iInfo) const
       case PLAYER_CUTLIST:
         ranges = GetEditList(data, duration);
         break;
+      case PLAYER_CUTS:
+        ranges = GetCuts(data, duration);
+        break;
+      case PLAYER_SCENE_MARKERS:
+        ranges = GetSceneMarkers(data, duration);
+        break;
       case PLAYER_CHAPTERS:
         ranges = GetChapters(data, duration);
         break;
@@ -656,6 +670,42 @@ std::vector<std::pair<float, float>> CPlayerGUIInfo::GetEditList(CDataCacheCore&
     float cutStart = edit.start * 100.0f / duration;
     float cutEnd = edit.end * 100.0f / duration;
     ranges.emplace_back(std::make_pair(cutStart, cutEnd));
+  }
+  return ranges;
+}
+
+std::vector<std::pair<float, float>> CPlayerGUIInfo::GetCuts(CDataCacheCore& data,
+                                                             time_t duration) const
+{
+  std::vector<std::pair<float, float>> ranges;
+
+  const std::vector<int64_t> cuts = data.GetCuts();
+  float lastMarker = 0.0f;
+  for (const auto& cut : cuts)
+  {
+    float marker = cut * 100.0f / duration;
+    if (marker != 0)
+      ranges.emplace_back(std::make_pair(lastMarker, marker));
+
+    lastMarker = marker;
+  }
+  return ranges;
+}
+
+std::vector<std::pair<float, float>> CPlayerGUIInfo::GetSceneMarkers(CDataCacheCore& data,
+                                                                     time_t duration) const
+{
+  std::vector<std::pair<float, float>> ranges;
+
+  const std::vector<int64_t> scenes = data.GetSceneMarkers();
+  float lastMarker = 0.0f;
+  for (const auto& scene : scenes)
+  {
+    float marker = scene * 100.0f / duration;
+    if (marker != 0)
+      ranges.emplace_back(std::make_pair(lastMarker, marker));
+
+    lastMarker = marker;
   }
   return ranges;
 }

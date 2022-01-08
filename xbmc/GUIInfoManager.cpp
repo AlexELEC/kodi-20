@@ -481,7 +481,7 @@ const infomap integer_bools[] =  {{ "isequal",          INTEGER_IS_EQUAL },
 ///                  \anchor Player_Position_Title
 ///                  _string_,
 ///     @return The title of the audio or video which has an offset `number` with respect to the start of the playlist.
-///     <p>><hr>
+///     <p><hr>
 ///     @skinning_v19 **[New Infolabel]** \link Player_Position_Title `Player.position(number).Title`\endlink
 ///     <p>
 ///   }
@@ -581,7 +581,7 @@ const infomap integer_bools[] =  {{ "isequal",          INTEGER_IS_EQUAL },
 ///                  \anchor Player_Position_Folderpath
 ///                  _string_,
 ///     @return The full path of the audio or video file which has an offset `number` with respect to the start of the playlist.
-///     <p>><hr>
+///     <p><hr>
 ///     @skinning_v19 **[New Infolabel]** \link Player_Position_Folderpath `Player.position(number).Folderpath`\endlink
 ///     <p>
 ///   }
@@ -604,7 +604,7 @@ const infomap integer_bools[] =  {{ "isequal",          INTEGER_IS_EQUAL },
 ///                  \anchor Player_Position_FilenameAndPath
 ///                  _string_,
 ///     @return The full path with filename of the audio or video file which has an offset `number` with respect to the start of the playlist.
-///     <p>><hr>
+///     <p><hr>
 ///     @skinning_v19 **[New Infolabel]** \link Player_Position_FilenameAndPath `Player.position(number).FilenameAndPath`\endlink
 ///     <p>
 ///   }
@@ -628,7 +628,7 @@ const infomap integer_bools[] =  {{ "isequal",          INTEGER_IS_EQUAL },
 ///                  \anchor Player_Position_Filename
 ///                  _string_,
 ///     @return The filename of the audio or video file which has an offset `number` with respect to the start of the playlist.
-///     <p>><hr>
+///     <p><hr>
 ///     @skinning_v19 **[New Infolabel]** \link Player_Position_Filename `Player.position(number).Filename`\endlink
 ///     <p>
 ///   }
@@ -743,6 +743,32 @@ const infomap integer_bools[] =  {{ "isequal",          INTEGER_IS_EQUAL },
 ///     @skinning_v20 **[New Infolabel]** \link Player_Editlist `Player.Editlist`\endlink
 ///     <p>
 ///   }
+///   \table_row3{   <b>`Player.Cuts`</b>,
+///                  \anchor Player_Cuts
+///                  _string_,
+///     @return The EDL cut markers of the currently playing item as csv in the format start1\,end1\,start2\,end2\,...
+///     Tokens must have values in the range from 0.0 to 100.0. end token must be less or equal than start token.
+///     <p><hr>
+///     @skinning_v20 **[New Infolabel]** \link Player_Cuts `Player.Cuts`\endlink
+///     <p>
+///   }
+///   \table_row3{   <b>`Player.SceneMarkers`</b>,
+///                  \anchor Player_SceneMarkers
+///                  _string_,
+///     @return The EDL scene markers of the currently playing item as csv in the format start1\,end1\,start2\,end2\,...
+///     Tokens must have values in the range from 0.0 to 100.0. end token must be less or equal than start token.
+///     <p><hr>
+///     @skinning_v20 **[New Infolabel]** \link Player_SceneMarkers `Player.SceneMarkers`\endlink
+///     <p>
+///   }
+///   \table_row3{   <b>`Player.HasSceneMarkers`</b>,
+///                  \anchor Player_HasSceneMarkers
+///                  _boolean_,
+///     @return **True** if the item being played has scene markers\, **False** otherwise
+///     <p><hr>
+///     @skinning_v20 **[New Infolabel]** \link Player_HasSceneMarkers `Player.HasSceneMarkers`\endlink
+///     <p>
+///   }
 ///   \table_row3{   <b>`Player.Chapters`</b>,
 ///                  \anchor Player_Chapters
 ///                  _string_,
@@ -805,6 +831,9 @@ const infomap player_labels[] = {{"hasmedia", PLAYER_HAS_MEDIA},
                                  {"icon", PLAYER_ICON},
                                  {"cutlist", PLAYER_CUTLIST},
                                  {"editlist", PLAYER_EDITLIST},
+                                 {"cuts", PLAYER_CUTS},
+                                 {"scenemarkers", PLAYER_SCENE_MARKERS},
+                                 {"hasscenemarkers", PLAYER_HAS_SCENE_MARKERS},
                                  {"chapters", PLAYER_CHAPTERS}};
 
 /// \page modules__infolabels_boolean_conditions
@@ -971,6 +1000,14 @@ const infomap player_times[] =   {{ "seektime",         PLAYER_SEEKTIME },
 ///     @skinning_v17 **[New Infolabel]** \link Player_Process_videoheight `Player.Process(videoheight)`\endlink
 ///     <p>
 ///   }
+///   \table_row3{   <b>`Player.Process(videoscantype)`</b>,
+///                  \anchor Player_Process_videoscantype
+///                  _string_,
+///     @return The scan type identifier of the currently playing video **p** (for progressive) or **i** (for interlaced).
+///     <p><hr>
+///     @skinning_v20 **[New Infolabel]** \link Player_Process_videoscantype `Player.Process(videoscantype)`\endlink
+///     <p>
+///   }
 ///   \table_row3{   <b>`Player.Process(videofps)`</b>,
 ///                  \anchor Player_Process_videofps
 ///                  _string_,
@@ -1023,21 +1060,19 @@ const infomap player_times[] =   {{ "seektime",         PLAYER_SEEKTIME },
 ///
 /// -----------------------------------------------------------------------------
 
-const infomap player_process[] =
-{
-  { "videodecoder", PLAYER_PROCESS_VIDEODECODER },
-  { "deintmethod", PLAYER_PROCESS_DEINTMETHOD },
-  { "pixformat", PLAYER_PROCESS_PIXELFORMAT },
-  { "videowidth", PLAYER_PROCESS_VIDEOWIDTH },
-  { "videoheight", PLAYER_PROCESS_VIDEOHEIGHT },
-  { "videofps", PLAYER_PROCESS_VIDEOFPS },
-  { "videodar", PLAYER_PROCESS_VIDEODAR },
-  { "videohwdecoder", PLAYER_PROCESS_VIDEOHWDECODER },
-  { "audiodecoder", PLAYER_PROCESS_AUDIODECODER },
-  { "audiochannels", PLAYER_PROCESS_AUDIOCHANNELS },
-  { "audiosamplerate", PLAYER_PROCESS_AUDIOSAMPLERATE },
-  { "audiobitspersample", PLAYER_PROCESS_AUDIOBITSPERSAMPLE }
-};
+const infomap player_process[] = {{"videodecoder", PLAYER_PROCESS_VIDEODECODER},
+                                  {"deintmethod", PLAYER_PROCESS_DEINTMETHOD},
+                                  {"pixformat", PLAYER_PROCESS_PIXELFORMAT},
+                                  {"videowidth", PLAYER_PROCESS_VIDEOWIDTH},
+                                  {"videoheight", PLAYER_PROCESS_VIDEOHEIGHT},
+                                  {"videofps", PLAYER_PROCESS_VIDEOFPS},
+                                  {"videodar", PLAYER_PROCESS_VIDEODAR},
+                                  {"videohwdecoder", PLAYER_PROCESS_VIDEOHWDECODER},
+                                  {"audiodecoder", PLAYER_PROCESS_AUDIODECODER},
+                                  {"audiochannels", PLAYER_PROCESS_AUDIOCHANNELS},
+                                  {"audiosamplerate", PLAYER_PROCESS_AUDIOSAMPLERATE},
+                                  {"audiobitspersample", PLAYER_PROCESS_AUDIOBITSPERSAMPLE},
+                                  {"videoscantype", PLAYER_PROCESS_VIDEOSCANTYPE}};
 
 /// \page modules__infolabels_boolean_conditions
 /// \subsection modules__infolabels_boolean_conditions_Weather Weather
@@ -2869,7 +2904,7 @@ const infomap musicplayer[] =    {{ "title",            MUSICPLAYER_TITLE },
 ///                  _string_,
 ///     @return The title of the video which has an offset `number` with respect to the start of the playlist.
 ///     @note If it's in the database it will return the database title\, else the filename.
-///     <p>><hr>
+///     <p><hr>
 ///     @skinning_v19 **[New Infolabel]** \link VideoPlayer_Position_Title `VideoPlayer.position(number).Title`\endlink
 ///     <p>
 ///   }

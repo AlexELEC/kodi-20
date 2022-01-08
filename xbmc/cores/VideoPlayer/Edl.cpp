@@ -762,6 +762,31 @@ const std::vector<EDL::Edit> CEdl::GetEditList() const
   return editList;
 }
 
+const std::vector<int64_t> CEdl::GetCutMarkers() const
+{
+  int surpassedSumOfCutDurations{0};
+  std::vector<int64_t> cutList;
+  for (const EDL::Edit& edit : m_vecEdits)
+  {
+    if (edit.action != Action::CUT)
+      continue;
+
+    cutList.emplace_back(edit.start - surpassedSumOfCutDurations);
+    surpassedSumOfCutDurations += edit.end - edit.start;
+  }
+  return cutList;
+}
+
+const std::vector<int64_t> CEdl::GetSceneMarkers() const
+{
+  std::vector<int64_t> sceneMarkers;
+  for (const int& scene : m_vecSceneMarkers)
+  {
+    sceneMarkers.emplace_back(GetTimeWithoutCuts(scene));
+  }
+  return sceneMarkers;
+}
+
 int CEdl::GetTimeWithoutCuts(int seek) const
 {
   if (!HasCuts())
@@ -841,6 +866,16 @@ void CEdl::SetLastEditTime(int editTime)
 void CEdl::ResetLastEditTime()
 {
   m_lastEditTime = -1;
+}
+
+void CEdl::SetLastEditActionType(EDL::Action action)
+{
+  m_lastEditActionType = action;
+}
+
+EDL::Action CEdl::GetLastEditActionType() const
+{
+  return m_lastEditActionType;
 }
 
 bool CEdl::GetNextSceneMarker(bool bPlus, const int iClock, int *iSceneMarker)

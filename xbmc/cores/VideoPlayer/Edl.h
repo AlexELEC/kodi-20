@@ -8,13 +8,10 @@
 
 #pragma once
 
+#include "cores/EdlEdit.h"
+
 #include <string>
 #include <vector>
-
-namespace EDL
-{
-struct Edit;
-}
 
 class CFileItem;
 
@@ -87,6 +84,24 @@ public:
   const std::vector<EDL::Edit> GetEditList() const;
 
   /*!
+   * @brief Get the list of EDL cut markers.
+   * @return The list of EDL cut markers or an empty vector if no EDL cuts exist.
+   * The returned values are accurate with respect to cut durations. I.e. if the file
+   * has multiple cuts, the positions of subsquent cuts are automatically corrected by
+   * substracting the previous cut durations.
+  */
+  const std::vector<int64_t> GetCutMarkers() const;
+
+  /*!
+   * @brief Get the list of EDL scene markers.
+   * @return The list of EDL scene markers or an empty vector if no EDL scene exist.
+   * The returned values are accurate with respect to cut durations. I.e. if the file
+   * has multiple cuts, the positions of scene markers are automatically corrected by
+   * substracting the surpassed cut durations until the scene marker point.
+  */
+  const std::vector<int64_t> GetSceneMarkers() const;
+
+  /*!
    * @brief Check if for the provided seek time is contained within an EDL
    * edit and fill pEdit with the respective edit struct.
    * @note seek time refers to the time in the original file timeline (i.e. without
@@ -116,6 +131,19 @@ public:
   */
   void ResetLastEditTime();
 
+  /*!
+   * @brief Set the last processed edit action type
+   * @param action The action type (e.g. COMM_BREAK)
+  */
+  void SetLastEditActionType(EDL::Action action);
+
+  /*!
+   * @brief Get the last processed edit action type (set during playback when a given
+   * edit is surpassed)
+   * @return The last processed edit action type or -1 if not any
+  */
+  EDL::Action GetLastEditActionType() const;
+
   // FIXME: remove const modifier for iClock as it makes no sense as it means nothing
   // for the reader of the interface, but limits the implementation
   // to not modify the parameter on stack
@@ -131,7 +159,16 @@ private:
   int m_totalCutTime;
   std::vector<EDL::Edit> m_vecEdits;
   std::vector<int> m_vecSceneMarkers;
+
+  /*!
+   * @brief Last processed EDL edit time (ms)
+  */
   int m_lastEditTime;
+
+  /*!
+   * @brief Last processed EDL edit action type
+  */
+  EDL::Action m_lastEditActionType{EDL::EDL_ACTION_NONE};
 
   // FIXME: remove const modifier for fFramesPerSecond as it makes no sense as it means nothing
   // for the reader of the interface, but limits the implementation

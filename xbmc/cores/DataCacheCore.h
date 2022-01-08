@@ -46,6 +46,18 @@ public:
   void SetVideoDAR(float dar);
   float GetVideoDAR();
 
+  /*!
+   * @brief Set if the video is interlaced in cache.
+   * @param isInterlaced Set true when the video is interlaced
+   */
+  void SetVideoInterlaced(bool isInterlaced);
+
+  /*!
+   * @brief Check if the video is interlaced from cache
+   * @return True if interlaced, otherwise false
+   */
+  bool IsVideoInterlaced();
+
   // player audio info
   void SetAudioDecoderName(std::string name);
   std::string GetAudioDecoderName();
@@ -69,6 +81,30 @@ public:
    * @return The EDL edits or an empty vector if no edits exist.
    */
   const std::vector<EDL::Edit>& GetEditList() const;
+
+  /*!
+   * @brief Set the list of cut markers in cache.
+   * @return The list of cuts or an empty list if no cuts exist
+   */
+  void SetCuts(const std::vector<int64_t>& cuts);
+
+  /*!
+   * @brief Get the list of cut markers from cache.
+   * @return The list of cut markers or an empty vector if no cuts exist.
+   */
+  const std::vector<int64_t>& GetCuts() const;
+
+  /*!
+   * @brief Set the list of scene markers in cache.
+   * @return The list of scene markers or an empty list if no scene markers exist
+   */
+  void SetSceneMarkers(const std::vector<int64_t>& sceneMarkers);
+
+  /*!
+   * @brief Get the list of scene markers markers from cache.
+   * @return The list of scene markers or an empty vector if no scene exist.
+   */
+  const std::vector<int64_t>& GetSceneMarkers() const;
 
   void SetChapters(const std::vector<std::pair<std::string, int64_t>>& chapters);
 
@@ -154,6 +190,7 @@ protected:
     int height;
     float fps;
     float dar;
+    bool m_isInterlaced;
   } m_playerVideoInfo;
 
   CCriticalSection m_audioPlayerSection;
@@ -182,6 +219,33 @@ protected:
     const std::vector<EDL::Edit>& GetEditList() const { return m_editList; }
 
     /*!
+      * @brief Save the list of cut markers in cache.
+      * @param cuts the list of cut markers to store in cache
+      */
+    void SetCuts(const std::vector<int64_t>& cuts) { m_cuts = cuts; }
+
+    /*!
+      * @brief Get the list of cut markers in cache.
+      * @return the list of cut markers in cache
+      */
+    const std::vector<int64_t>& GetCuts() const { return m_cuts; }
+
+    /*!
+      * @brief Save the list of scene markers in cache.
+      * @param sceneMarkers the list of scene markers to store in cache
+      */
+    void SetSceneMarkers(const std::vector<int64_t>& sceneMarkers)
+    {
+      m_sceneMarkers = sceneMarkers;
+    }
+
+    /*!
+      * @brief Get the list of scene markers in cache.
+      * @return the list of scene markers in cache
+      */
+    const std::vector<int64_t>& GetSceneMarkers() const { return m_sceneMarkers; }
+
+    /*!
       * @brief Save the chapter list in cache.
       * @param chapters the list of chapters to store in cache
       */
@@ -203,6 +267,8 @@ protected:
     {
       m_editList.clear();
       m_chapters.clear();
+      m_cuts.clear();
+      m_sceneMarkers.clear();
     }
 
   private:
@@ -210,6 +276,10 @@ protected:
     std::vector<EDL::Edit> m_editList;
     /*!< name and position for chapters */
     std::vector<std::pair<std::string, int64_t>> m_chapters;
+    /*!< position for EDL cuts */
+    std::vector<int64_t> m_cuts;
+    /*!< position for EDL scene markers */
+    std::vector<int64_t> m_sceneMarkers;
   } m_contentInfo;
 
   CCriticalSection m_renderSection;

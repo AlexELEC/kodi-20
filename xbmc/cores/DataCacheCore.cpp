@@ -188,6 +188,18 @@ float CDataCacheCore::GetVideoDAR()
   return m_playerVideoInfo.dar;
 }
 
+void CDataCacheCore::SetVideoInterlaced(bool isInterlaced)
+{
+  CSingleLock lock(m_videoPlayerSection);
+  m_playerVideoInfo.m_isInterlaced = isInterlaced;
+}
+
+bool CDataCacheCore::IsVideoInterlaced()
+{
+  CSingleLock lock(m_videoPlayerSection);
+  return m_playerVideoInfo.m_isInterlaced;
+}
+
 // player audio info
 void CDataCacheCore::SetAudioDecoderName(std::string name)
 {
@@ -255,6 +267,30 @@ const std::vector<EDL::Edit>& CDataCacheCore::GetEditList() const
 {
   CSingleLock lock(m_contentSection);
   return m_contentInfo.GetEditList();
+}
+
+void CDataCacheCore::SetCuts(const std::vector<int64_t>& cuts)
+{
+  CSingleLock lock(m_contentSection);
+  m_contentInfo.SetCuts(cuts);
+}
+
+const std::vector<int64_t>& CDataCacheCore::GetCuts() const
+{
+  CSingleLock lock(m_contentSection);
+  return m_contentInfo.GetCuts();
+}
+
+void CDataCacheCore::SetSceneMarkers(const std::vector<int64_t>& sceneMarkers)
+{
+  CSingleLock lock(m_contentSection);
+  m_contentInfo.SetSceneMarkers(sceneMarkers);
+}
+
+const std::vector<int64_t>& CDataCacheCore::GetSceneMarkers() const
+{
+  CSingleLock lock(m_contentSection);
+  return m_contentInfo.GetSceneMarkers();
 }
 
 void CDataCacheCore::SetChapters(const std::vector<std::pair<std::string, int64_t>>& chapters)
