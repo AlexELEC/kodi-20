@@ -74,6 +74,11 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake/scripts/${CORE_SYSTEM_NAME}/ArchSetup.cm
 endif()
 include(${CMAKE_SOURCE_DIR}/cmake/scripts/${CORE_SYSTEM_NAME}/ArchSetup.cmake)
 
+# No TARBALL_DIR given, or no arch specific default set
+if(NOT TARBALL_DIR)
+  set(TARBALL_DIR ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/download)
+endif()
+
 message(STATUS "Core system type: ${CORE_SYSTEM_NAME}")
 message(STATUS "Platform: ${CORE_PLATFORM_NAME}")
 message(STATUS "CPU: ${CPU}, ARCH: ${ARCH}")
@@ -155,12 +160,22 @@ if(NOT MSVC)
     -Wmissing-field-initializers
     -Wsign-compare
     -Wextra
-    -Wno-cast-function-type # from -Wextra
     -Wno-unused-parameter # from -Wextra
   )
 
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    add_options(ALL_LANGUAGES ALL_BUILDS
+      -Wno-cast-function-type # from -Wextra
+      -Wno-deprecated-copy # from -Wextra
+    )
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_options(ALL_LANGUAGES ALL_BUILDS
+      -Wno-bad-function-cast
+      -Wno-deprecated
+    )
+  endif()
+
   add_options(CXX ALL_BUILDS
-    -Wno-deprecated-copy # from -Wextra
     -Wnon-virtual-dtor
   )
 

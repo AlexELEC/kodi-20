@@ -656,7 +656,7 @@ std::string CPlayerGUIInfo::GetContentRanges(int iInfo) const
   return values;
 }
 
-std::vector<std::pair<float, float>> CPlayerGUIInfo::GetEditList(CDataCacheCore& data,
+std::vector<std::pair<float, float>> CPlayerGUIInfo::GetEditList(const CDataCacheCore& data,
                                                                  time_t duration) const
 {
   std::vector<std::pair<float, float>> ranges;
@@ -664,22 +664,19 @@ std::vector<std::pair<float, float>> CPlayerGUIInfo::GetEditList(CDataCacheCore&
   const std::vector<EDL::Edit> edits = data.GetEditList();
   for (const auto& edit : edits)
   {
-    if (edit.action != EDL::Action::CUT && edit.action != EDL::Action::COMM_BREAK)
-      continue;
-
-    float cutStart = edit.start * 100.0f / duration;
-    float cutEnd = edit.end * 100.0f / duration;
-    ranges.emplace_back(std::make_pair(cutStart, cutEnd));
+    float editStart = edit.start * 100.0f / duration;
+    float editEnd = edit.end * 100.0f / duration;
+    ranges.emplace_back(std::make_pair(editStart, editEnd));
   }
   return ranges;
 }
 
-std::vector<std::pair<float, float>> CPlayerGUIInfo::GetCuts(CDataCacheCore& data,
+std::vector<std::pair<float, float>> CPlayerGUIInfo::GetCuts(const CDataCacheCore& data,
                                                              time_t duration) const
 {
   std::vector<std::pair<float, float>> ranges;
 
-  const std::vector<int64_t> cuts = data.GetCuts();
+  const std::vector<int64_t>& cuts = data.GetCuts();
   float lastMarker = 0.0f;
   for (const auto& cut : cuts)
   {
@@ -692,7 +689,7 @@ std::vector<std::pair<float, float>> CPlayerGUIInfo::GetCuts(CDataCacheCore& dat
   return ranges;
 }
 
-std::vector<std::pair<float, float>> CPlayerGUIInfo::GetSceneMarkers(CDataCacheCore& data,
+std::vector<std::pair<float, float>> CPlayerGUIInfo::GetSceneMarkers(const CDataCacheCore& data,
                                                                      time_t duration) const
 {
   std::vector<std::pair<float, float>> ranges;
@@ -710,7 +707,8 @@ std::vector<std::pair<float, float>> CPlayerGUIInfo::GetSceneMarkers(CDataCacheC
   return ranges;
 }
 
-std::vector<std::pair<float, float>> CPlayerGUIInfo::GetChapters(CDataCacheCore& data, time_t duration) const
+std::vector<std::pair<float, float>> CPlayerGUIInfo::GetChapters(const CDataCacheCore& data,
+                                                                 time_t duration) const
 {
   std::vector<std::pair<float, float>> ranges;
 
