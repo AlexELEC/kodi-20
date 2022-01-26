@@ -33,7 +33,7 @@
 #
 
 # required ffmpeg library versions
-set(REQUIRED_FFMPEG_VERSION 4.4)
+set(REQUIRED_FFMPEG_VERSION 4.4.1)
 set(_avcodec_ver ">=58.134.100")
 set(_avfilter_ver ">=7.110.100")
 set(_avformat_ver ">=58.76.100")
@@ -253,7 +253,8 @@ if(NOT FFMPEG_FOUND)
 
   externalproject_add(ffmpeg
                       URL ${FFMPEG_URL}
-                      DOWNLOAD_NAME ${ARCHIVE}
+                      URL_HASH ${FFMPEG_HASH}
+                      DOWNLOAD_NAME ${FFMPEG_ARCHIVE}
                       DOWNLOAD_DIR ${TARBALL_DIR}
                       PREFIX ${CORE_BUILD_DIR}/ffmpeg
                       CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}
