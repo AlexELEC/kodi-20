@@ -37,7 +37,7 @@ bool CAddonRepos::IsFromOfficialRepo(const std::shared_ptr<IAddon>& addon,
                                      CheckAddonPath checkAddonPath)
 {
   auto comparator = [&](const RepoInfo& officialRepo) {
-    if (checkAddonPath == CheckAddonPath::YES)
+    if (checkAddonPath == CheckAddonPath::CHOICE_YES)
     {
       return (addon->Origin() == officialRepo.m_repoId &&
               StringUtils::StartsWithNoCase(addon->Path(), officialRepo.m_origin));
@@ -138,7 +138,7 @@ void CAddonRepos::SetupLatestVersionMaps()
     {
       const auto& addonToAdd = addonMapEntry.second;
 
-      if (IsFromOfficialRepo(addonToAdd, CheckAddonPath::YES))
+      if (IsFromOfficialRepo(addonToAdd, CheckAddonPath::CHOICE_YES))
       {
         AddAddonIfLatest(addonToAdd, m_latestOfficialVersions);
       }
@@ -239,7 +239,7 @@ bool CAddonRepos::DoAddonUpdateCheck(const std::shared_ptr<IAddon>& addon,
     if (ORIGIN_SYSTEM != addon->Origin() && !hasOfficialUpdate) // not a system addon
     {
       // If we didn't find an official update
-      if (IsFromOfficialRepo(addon, CheckAddonPath::YES)) // is an official addon
+      if (IsFromOfficialRepo(addon, CheckAddonPath::CHOICE_YES)) // is an official addon
       {
         if (updateMode == AddonRepoUpdateMode::ANY_REPOSITORY)
         {
@@ -453,7 +453,8 @@ bool CAddonRepos::FindDependency(const std::string& dependsId,
   // we got the dependency, so now get a repository-pointer to return
 
   std::shared_ptr<IAddon> tmp;
-  if (!m_addonMgr.GetAddon(dependencyToInstall->Origin(), tmp, ADDON_REPOSITORY, OnlyEnabled::YES))
+  if (!m_addonMgr.GetAddon(dependencyToInstall->Origin(), tmp, ADDON_REPOSITORY,
+                           OnlyEnabled::CHOICE_YES))
     return false;
 
   repoForDep = std::static_pointer_cast<CRepository>(tmp);
@@ -497,7 +498,7 @@ void CAddonRepos::BuildCompatibleVersionsList(
   {
     if (m_addonMgr.IsCompatible(*addon))
     {
-      if (IsFromOfficialRepo(addon, CheckAddonPath::YES))
+      if (IsFromOfficialRepo(addon, CheckAddonPath::CHOICE_YES))
       {
         officialVersions.emplace_back(addon);
       }
