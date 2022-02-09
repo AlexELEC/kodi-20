@@ -1,11 +1,5 @@
-include ../../Makefile.include
-DEPS= ../../Makefile.include Makefile
-
-# lib name, version
-LIBNAME=expat
-VERSION=2.4.1
-SOURCE=$(LIBNAME)-$(VERSION)
-ARCHIVE=$(SOURCE).tar.xz
+include ../../Makefile.include EXPAT-VERSION ../../download-files.include
+DEPS= ../../Makefile.include Makefile EXPAT-VERSION ../../download-files.include
 
 # configuration settings
 CONFIGURE=cp -f $(CONFIG_SUB) $(CONFIG_GUESS) ./conftools; \
@@ -20,10 +14,8 @@ LIBDYLIB=$(PLATFORM)/lib/.libs/lib$(LIBNAME).a
 
 all: .installed-$(PLATFORM)
 
-$(TARBALLS_LOCATION)/$(ARCHIVE):
-	cd $(TARBALLS_LOCATION); $(RETRIEVE_TOOL) $(RETRIEVE_TOOL_FLAGS) $(BASE_URL)/$(ARCHIVE)
 
-$(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
+$(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE).$(HASH_TYPE) $(DEPS)
 	rm -rf $(PLATFORM)/*; mkdir -p $(PLATFORM)
 	cd $(PLATFORM); $(ARCHIVE_TOOL) $(ARCHIVE_TOOL_FLAGS) $(TARBALLS_LOCATION)/$(ARCHIVE)
 	cd $(PLATFORM); $(CONFIGURE)

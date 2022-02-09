@@ -1,6 +1,6 @@
 -include ../../Makefile.include
 include LIBDVDREAD-VERSION
-DEPS = LIBDVDREAD-VERSION Makefile
+DEPS = LIBDVDREAD-VERSION Makefile ../../download-files.include
 
 # configuration settings
 config = --prefix=$(PREFIX) --disable-shared --enable-static --with-pic --with-libdvdcss
@@ -31,13 +31,7 @@ endif
 RETRIEVE_TOOL := curl -Ls --create-dirs --retry 10 --retry-delay 3
 ARCHIVE_TOOL := tar --strip-components=1 -xf
 
-GITREV=$(shell git ls-remote $(BASE_URL) $(VERSION) | awk '{print $$1}')
-ifeq ($(GITREV),)
-  ARCHIVE=$(LIBNAME)-$(VERSION).tar.gz
-else
-  ARCHIVE=$(LIBNAME)-$(GITREV).tar.gz
-endif
-
+include ../../download-files.include
 all: .installed-$(PLATFORM)
 
 download: $(TARBALLS_LOCATION)/$(ARCHIVE)
@@ -45,7 +39,7 @@ download: $(TARBALLS_LOCATION)/$(ARCHIVE)
 $(TARBALLS_LOCATION)/$(ARCHIVE):
 	cd $(TARBALLS_LOCATION); $(RETRIEVE_TOOL) -o $(TARBALLS_LOCATION)/$(ARCHIVE) $(BASE_URL)/archive/$(VERSION).tar.gz
 
-$(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
+$(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE).$(HASH_TYPE) $(DEPS)
 	rm -rf $(PLATFORM); mkdir -p $(PLATFORM)
 	cd $(PLATFORM); $(ARCHIVE_TOOL) $(TARBALLS_LOCATION)/$(ARCHIVE)
 	cd $(PLATFORM); $(AUTORECONF) -vif && $(PKGCONFIGPATH) CFLAGS="$(CFLAGS) $(EXTRA_CFLAGS)" ac_cv_path_GIT= ./configure $(config)
