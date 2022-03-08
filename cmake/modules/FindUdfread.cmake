@@ -10,55 +10,37 @@
 # UDFREAD_LIBRARIES - the udfread libraries
 # UDFREAD_DEFINITIONS - the udfread definitions
 
-if(PKG_CONFIG_FOUND)
-  pkg_check_modules(PC_UDFREAD udfread>=1.0.0 QUIET)
-endif()
-
-find_path(UDFREAD_INCLUDE_DIR NAMES udfread/udfread.h
-                          PATHS ${PC_UDFREAD_INCLUDEDIR})
-
-find_library(UDFREAD_LIBRARY NAMES udfread libudfread
-                         PATHS ${PC_UDFREAD_LIBDIR})
-
-set(UDFREAD_VERSION ${PC_UDFREAD_VERSION})
-
 if(ENABLE_INTERNAL_UDFREAD)
-  include(ExternalProject)
   include(cmake/scripts/common/ModuleHelpers.cmake)
 
-  get_archive_name(libudfread)
+  set(MODULE_LC udfread)
 
-  # allow user to override the download URL with a local tarball
-  # needed for offline build envs
-  if(UDFREAD_URL)
-    get_filename_component(UDFREAD_URL "${UDFREAD_URL}" ABSOLUTE)
-  else()
-    set(UDFREAD_URL http://mirrors.kodi.tv/build-deps/sources/${UDFREAD_ARCHIVE})
+  SETUP_BUILD_VARS()
+
+  set(UDFREAD_VERSION ${${MODULE}_VER})
+
+  set(CONFIGURE_COMMAND autoreconf -vif &&
+                        ./configure
+                        --enable-static
+                        --disable-shared
+                        --prefix=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR})
+  set(BUILD_IN_SOURCE 1)
+
+  BUILD_DEP_TARGET()
+
+  set_property(GLOBAL APPEND PROPERTY INTERNAL_DEPS_PROP udfread)
+else()
+  if(PKG_CONFIG_FOUND)
+    pkg_check_modules(PC_UDFREAD udfread>=1.0.0 QUIET)
   endif()
 
-  if(VERBOSE)
-    message(STATUS "UDFREAD_URL: ${UDFREAD_URL}")
-  endif()
+  find_path(UDFREAD_INCLUDE_DIR NAMES udfread/udfread.h
+                            PATHS ${PC_UDFREAD_INCLUDEDIR})
 
-  set(UDFREAD_LIBRARY ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/lib/libudfread.a)
-  set(UDFREAD_INCLUDE_DIR ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/include)
-  set(UDFREAD_VERSION ${LIBUDFREAD_VER})
+  find_library(UDFREAD_LIBRARY NAMES udfread libudfread
+                           PATHS ${PC_UDFREAD_LIBDIR})
 
-  externalproject_add(udfread
-                      URL ${UDFREAD_URL}
-                      URL_HASH ${UDFREAD_HASH}
-                      DOWNLOAD_NAME ${UDFREAD_ARCHIVE}
-                      DOWNLOAD_DIR ${TARBALL_DIR}
-                      PREFIX ${CORE_BUILD_DIR}/libudfread
-                      CONFIGURE_COMMAND autoreconf -vif &&
-                                        ./configure
-                                        --enable-static
-                                        --disable-shared
-                                        --prefix=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}
-                      BUILD_BYPRODUCTS ${UDFREAD_LIBRARY}
-                      BUILD_IN_SOURCE 1)
-
-  set_target_properties(udfread PROPERTIES FOLDER "External Projects")
+  set(UDFREAD_VERSION ${PC_UDFREAD_VERSION})
 endif()
 
 include(FindPackageHandleStandardArgs)

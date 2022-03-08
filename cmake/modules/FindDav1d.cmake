@@ -9,62 +9,44 @@
 # DAV1D_INCLUDE_DIRS - the dav1d include directories
 # DAV1D_LIBRARIES - the dav1d libraries
 
-if(PKG_CONFIG_FOUND)
-  pkg_check_modules(PC_DAV1D dav1d QUIET)
-endif()
-
-find_library(DAV1D_LIBRARY NAMES dav1d libdav1d
-                           PATHS ${PC_DAV1D_LIBDIR})
-
-find_path(DAV1D_INCLUDE_DIR NAMES dav1d/dav1d.h
-                            PATHS ${PC_DAV1D_INCLUDEDIR})
-
-set(DAV1D_VERSION ${PC_DAV1D_VERSION})
-
 if(ENABLE_INTERNAL_DAV1D)
-  include(ExternalProject)
   include(cmake/scripts/common/ModuleHelpers.cmake)
 
-  get_archive_name(dav1d)
-  set(DAV1D_VERSION ${DAV1D_VER})
+  set(MODULE_LC dav1d)
 
-  # allow user to override the download URL with a local tarball
-  # needed for offline build envs
-  if(DAV1D_URL)
-    get_filename_component(DAV1D_URL "${DAV1D_URL}" ABSOLUTE)
-  else()
-    set(DAV1D_URL http://mirrors.kodi.tv/build-deps/sources/${DAV1D_ARCHIVE})
+  SETUP_BUILD_VARS()
+
+  set(DAV1D_VERSION ${${MODULE}_VER})
+
+  find_program(NINJA_EXECUTABLE ninja REQUIRED)
+  find_program(MESON_EXECUTABLE meson REQUIRED)
+
+  set(CONFIGURE_COMMAND ${MESON_EXECUTABLE}
+                        --buildtype=release
+                        --default-library=static
+                        --prefix=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}
+                        --libdir=lib
+                        -Denable_asm=true
+                        -Denable_tools=false
+                        -Denable_examples=false
+                        -Denable_tests=false
+                        ../dav1d)
+  set(BUILD_COMMAND ${NINJA_EXECUTABLE})
+  set(INSTALL_COMMAND ${NINJA_EXECUTABLE} install)
+
+  BUILD_DEP_TARGET()
+else()
+  if(PKG_CONFIG_FOUND)
+    pkg_check_modules(PC_DAV1D dav1d QUIET)
   endif()
 
-  if(VERBOSE)
-    message(STATUS "DAV1D_URL: ${DAV1D_URL}")
-  endif()
+  find_library(DAV1D_LIBRARY NAMES dav1d libdav1d
+                             PATHS ${PC_DAV1D_LIBDIR})
 
-  set(DAV1D_LIBRARY ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/lib/libdav1d.a)
-  set(DAV1D_INCLUDE_DIR ${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/include)
-  set(DAV1D_VERSION ${DAV1D_VER})
+  find_path(DAV1D_INCLUDE_DIR NAMES dav1d/dav1d.h
+                              PATHS ${PC_DAV1D_INCLUDEDIR})
 
-  externalproject_add(dav1d
-                      URL ${DAV1D_URL}
-                      URL_HASH ${DAV1D_HASH}
-                      DOWNLOAD_NAME ${DAV1D_ARCHIVE}
-                      DOWNLOAD_DIR ${TARBALL_DIR}
-                      PREFIX ${CORE_BUILD_DIR}/dav1d
-                      CONFIGURE_COMMAND meson
-                                        --buildtype=release
-                                        --default-library=static
-                                        --prefix=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}
-                                        --libdir=lib
-                                        -Denable_asm=true
-                                        -Denable_tools=false
-                                        -Denable_examples=false
-                                        -Denable_tests=false
-                                        ../dav1d
-                      BUILD_COMMAND ninja
-                      INSTALL_COMMAND ninja install
-                      BUILD_BYPRODUCTS ${DAV1D_LIBRARY})
-
-  set_target_properties(dav1d PROPERTIES FOLDER "External Projects")
+  set(DAV1D_VERSION ${PC_DAV1D_VERSION})
 endif()
 
 include(FindPackageHandleStandardArgs)

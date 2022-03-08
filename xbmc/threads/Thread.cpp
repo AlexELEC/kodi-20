@@ -8,24 +8,21 @@
  *  See LICENSES/README.md for more information.
  */
 
-#define __STDC_FORMAT_MACROS
-
 #include "Thread.h"
-#include "IRunnable.h"
 
+#include "IRunnable.h"
 #include "commons/Exception.h"
+#include "threads/IThreadImpl.h"
 #include "threads/SingleLock.h"
 #include "utils/log.h"
 
 #include <atomic>
 #include <inttypes.h>
 #include <iostream>
+#include <mutex>
 #include <stdlib.h>
 
 static thread_local CThread* currentThread;
-
-// This is including .cpp code so should be after the other #includes
-#include "threads/platform/ThreadImpl.cpp"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -82,7 +79,7 @@ void CThread::Create(bool bAutoDelete)
   m_StartEvent.Reset();
 
   // lock?
-  //CSingleLock l(m_CriticalSection);
+  //std::unique_lock<CCriticalSection> l(m_CriticalSection);
 
   std::promise<bool> prom;
   m_future = prom.get_future();
@@ -93,7 +90,7 @@ void CThread::Create(bool bAutoDelete)
     //   is fully initialized. Interestingly, using a std::atomic doesn't
     //   have the appropriate memory barrier behavior to accomplish the
     //   same thing so a full system mutex needs to be used.
-    CSingleLock blockLambdaTillDone(m_CriticalSection);
+    std::unique_lock<CCriticalSection> blockLambdaTillDone(m_CriticalSection);
     m_thread = new std::thread([](CThread* pThread, std::promise<bool> promise)
     {
       try
@@ -105,7 +102,8 @@ void CThread::Create(bool bAutoDelete)
           // lambda's call stack prior to the thread that kicked off this lambda
           // having it set. Once this lock is released, the CThread::Create function
           // that kicked this off is done so everything should be set.
-          CSingleLock waitForThreadInternalsToBeSet(pThread->m_CriticalSection);
+          std::unique_lock<CCriticalSection> waitForThreadInternalsToBeSet(
+              pThread->m_CriticalSection);
         }
 
         // This is used in various helper methods like GetCurrentThread so it needs
@@ -129,7 +127,8 @@ void CThread::Create(bool bAutoDelete)
         std::string id = ss.str();
         autodelete = pThread->m_bAutoDelete;
 
-        pThread->SetThreadInfo();
+        pThread->m_impl = IThreadImpl::CreateThreadImpl(pThread->m_thread->native_handle());
+        pThread->m_impl->SetThreadInfo(name);
 
         CLog::Log(LOGDEBUG, "Thread {} start, auto delete: {}", name,
                   (autodelete ? "true" : "false"));
@@ -178,6 +177,11 @@ bool CThread::IsRunning() const
     return false;
 }
 
+bool CThread::SetPriority(const ThreadPriority& priority)
+{
+  return m_impl->SetPriority(priority);
+}
+
 bool CThread::IsAutoDelete() const
 {
   return m_bAutoDelete;
@@ -189,11 +193,11 @@ void CThread::StopThread(bool bWait /*= true*/)
 
   m_bStop = true;
   m_StopEvent.Set();
-  CSingleLock lock(m_CriticalSection);
+  std::unique_lock<CCriticalSection> lock(m_CriticalSection);
   std::thread* lthread = m_thread;
   if (lthread != nullptr && bWait && !IsCurrentThread())
   {
-    lock.Leave();
+    lock.unlock();
     if (!Join(std::chrono::milliseconds::max())) // eh?
       lthread->join();
     m_thread = nullptr;
@@ -222,7 +226,7 @@ CThread* CThread::GetCurrentThread()
 
 bool CThread::Join(std::chrono::milliseconds duration)
 {
-  CSingleLock l(m_CriticalSection);
+  std::unique_lock<CCriticalSection> l(m_CriticalSection);
   std::thread* lthread = m_thread;
   if (lthread != nullptr)
   {

@@ -8,11 +8,13 @@
 
 #pragma once
 
-#include "threads/SingleLock.h"
+#include "threads/CriticalSection.h"
 
 #include <chrono>
 #include <condition_variable>
 #include <functional>
+#include <mutex>
+#include <utility>
 
 namespace XbmcThreads
 {
@@ -35,7 +37,7 @@ namespace XbmcThreads
     {
       int count = lock.count;
       lock.count = 0;
-      cond.wait(lock.get_underlying(), predicate);
+      cond.wait(lock.get_underlying(), std::move(predicate));
       lock.count = count;
     }
 
@@ -69,15 +71,15 @@ namespace XbmcThreads
       return res == std::cv_status::no_timeout;
     }
 
-    inline void wait(CSingleLock& lock, std::function<bool()> predicate)
+    inline void wait(std::unique_lock<CCriticalSection>& lock, std::function<bool()> predicate)
     {
-      cond.wait(*lock.mutex(), predicate);
+      cond.wait(*lock.mutex(), std::move(predicate));
     }
 
-    inline void wait(CSingleLock& lock) { wait(*lock.mutex()); }
+    inline void wait(std::unique_lock<CCriticalSection>& lock) { wait(*lock.mutex()); }
 
     template<typename Rep, typename Period>
-    inline bool wait(CSingleLock& lock,
+    inline bool wait(std::unique_lock<CCriticalSection>& lock,
                      std::chrono::duration<Rep, Period> duration,
                      std::function<bool()> predicate)
     {
@@ -85,7 +87,8 @@ namespace XbmcThreads
     }
 
     template<typename Rep, typename Period>
-    inline bool wait(CSingleLock& lock, std::chrono::duration<Rep, Period> duration)
+    inline bool wait(std::unique_lock<CCriticalSection>& lock,
+                     std::chrono::duration<Rep, Period> duration)
     {
       return wait(*lock.mutex(), duration);
     }

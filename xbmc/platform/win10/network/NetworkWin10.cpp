@@ -7,22 +7,24 @@
  */
 
 #include "NetworkWin10.h"
+
 #include "filesystem/SpecialProtocol.h"
+#include "settings/Settings.h"
+#include "utils/StringUtils.h"
+#include "utils/log.h"
+
 #include "platform/win10/AsyncHelpers.h"
 #include "platform/win32/WIN32Util.h"
-#include "settings/Settings.h"
-#include "threads/SingleLock.h"
-#include "utils/log.h"
-#include "utils/StringUtils.h"
 
 #include <errno.h>
-#include <iphlpapi.h>
-#include <ppltasks.h>
+#include <mutex>
 #include <string.h>
-#include <Ws2tcpip.h>
-#include <ws2ipdef.h>
 
 #include <Ipexport.h>
+#include <Ws2tcpip.h>
+#include <iphlpapi.h>
+#include <ppltasks.h>
+#include <ws2ipdef.h>
 #ifndef IP_STATUS_BASE
 
 // --- c&p from Ipexport.h ----------------
@@ -55,6 +57,11 @@ typedef struct icmp_echo_reply {
 #endif //! IP_STATUS_BASE
 #include <Icmpapi.h>
 
+namespace
+{
+constexpr int MAC_LENGTH = 6; // fixed MAC length used in CNetworkInterface
+}
+
 using namespace winrt::Windows::Networking::Connectivity;
 
 CNetworkInterfaceWin10::CNetworkInterfaceWin10(const PIP_ADAPTER_ADDRESSES address)
@@ -76,16 +83,20 @@ bool CNetworkInterfaceWin10::IsConnected() const
 
 std::string CNetworkInterfaceWin10::GetMacAddress() const
 {
-  std::string result;
+  if (m_adapterAddr->PhysicalAddressLength < MAC_LENGTH)
+    return "";
+
   unsigned char* mAddr = m_adapterAddr->PhysicalAddress;
-  result = StringUtils::Format("{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mAddr[0], mAddr[1],
-                               mAddr[2], mAddr[3], mAddr[4], mAddr[5]);
-  return result;
+  return StringUtils::Format("{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}", mAddr[0], mAddr[1],
+                             mAddr[2], mAddr[3], mAddr[4], mAddr[5]);
 }
 
 void CNetworkInterfaceWin10::GetMacAddressRaw(char rawMac[6]) const
 {
-  memcpy(rawMac, m_adapterAddr->PhysicalAddress, 6);
+  size_t len = (m_adapterAddr->PhysicalAddressLength > MAC_LENGTH)
+                   ? MAC_LENGTH
+                   : m_adapterAddr->PhysicalAddressLength;
+  memcpy(rawMac, m_adapterAddr->PhysicalAddress, len);
 }
 
 bool CNetworkInterfaceWin10::GetHostMacAddress(unsigned long host, std::string& mac) const
@@ -149,15 +160,15 @@ std::string CNetworkInterfaceWin10::GetCurrentDefaultGateway(void) const
   return result;
 }
 
-CNetworkWin10::CNetworkWin10()
-  : CNetworkBase()
-  , m_adapterAddresses(nullptr)
+CNetworkWin10::CNetworkWin10() : CNetworkBase()
 {
   queryInterfaceList();
-  NetworkInformation::NetworkStatusChanged([this](auto&&) {
-    CSingleLock lock(m_critSection);
-    queryInterfaceList();
-  });
+  NetworkInformation::NetworkStatusChanged(
+      [this](auto&&)
+      {
+        std::unique_lock<CCriticalSection> lock(m_critSection);
+        queryInterfaceList();
+      });
 }
 
 CNetworkWin10::~CNetworkWin10(void)
@@ -174,19 +185,17 @@ void CNetworkWin10::CleanInterfaceList()
     delete nInt;
     it = m_interfaces.erase(it);
   }
-  free(m_adapterAddresses);
-  m_adapterAddresses = nullptr;
 }
 
 std::vector<CNetworkInterface*>& CNetworkWin10::GetInterfaceList(void)
 {
-  CSingleLock lock (m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
   return m_interfaces;
 }
 
 CNetworkInterface* CNetworkWin10::GetFirstConnectedInterface()
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
   for (CNetworkInterface* intf : m_interfaces)
   {
     if (intf->IsEnabled() && intf->IsConnected() && !intf->GetCurrentDefaultGateway().empty())
@@ -246,13 +255,12 @@ void CNetworkWin10::queryInterfaceList()
   if (GetAdaptersAddresses(AF_INET, flags, nullptr, nullptr, &ulOutBufLen) != ERROR_BUFFER_OVERFLOW)
     return;
 
-  m_adapterAddresses = static_cast<PIP_ADAPTER_ADDRESSES>(malloc(ulOutBufLen));
-  if (m_adapterAddresses == nullptr)
-    return;
+  m_adapterAddresses.resize(ulOutBufLen);
+  auto adapterAddresses = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(m_adapterAddresses.data());
 
-  if (GetAdaptersAddresses(AF_INET, flags, nullptr, m_adapterAddresses, &ulOutBufLen) == NO_ERROR)
+  if (GetAdaptersAddresses(AF_INET, flags, nullptr, adapterAddresses, &ulOutBufLen) == NO_ERROR)
   {
-    for (PIP_ADAPTER_ADDRESSES adapter = m_adapterAddresses; adapter; adapter = adapter->Next)
+    for (PIP_ADAPTER_ADDRESSES adapter = adapterAddresses; adapter; adapter = adapter->Next)
     {
       if (adapter->IfType == IF_TYPE_SOFTWARE_LOOPBACK)
         continue;
@@ -270,9 +278,8 @@ std::vector<std::string> CNetworkWin10::GetNameServers(void)
   if (GetNetworkParams(nullptr, &ulOutBufLen) != ERROR_BUFFER_OVERFLOW)
     return result;
 
-  PFIXED_INFO pInfo = static_cast<PFIXED_INFO>(malloc(ulOutBufLen));
-  if (pInfo == nullptr)
-    return result;
+  std::vector<uint8_t> buffer(ulOutBufLen);
+  PFIXED_INFO pInfo = reinterpret_cast<PFIXED_INFO>(buffer.data());
 
   if (GetNetworkParams(pInfo, &ulOutBufLen) == ERROR_SUCCESS)
   {
@@ -286,7 +293,6 @@ std::vector<std::string> CNetworkWin10::GetNameServers(void)
       addr = addr->Next;
     }
   }
-  free(pInfo);
 
   return result;
 }

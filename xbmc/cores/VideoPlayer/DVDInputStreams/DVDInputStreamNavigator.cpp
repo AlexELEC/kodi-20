@@ -532,7 +532,7 @@ int CDVDInputStreamNavigator::ProcessBlock(uint8_t* dest_buffer, int* read)
             {
               m_mapTitleChapters[m_iTitle][i + 2] = times[i] / 90000;
             }
-            m_dll.dvdnav_free(times);
+            free(times);
           }
         }
         CLog::Log(LOGDEBUG, "{} - Cell change: Title {}, Chapter {}", __FUNCTION__, m_iTitle,
@@ -1000,24 +1000,8 @@ int CDVDInputStreamNavigator::GetActiveAudioStream()
 
   if (m_dvdnav)
   {
-    vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
-    if (vm && vm->state.pgc)
-    {
-      // get the current selected audiostream, for non VTS_DOMAIN it is always stream 0
-      int audioN = 0;
-      if (vm->state.domain == VTS_DOMAIN)
-      {
-        audioN = vm->state.AST_REG;
-
-        /* make sure stream is valid, if not don't allow it */
-        if (audioN < 0 || audioN >= 8)
-          audioN = -1;
-        else if ( !(vm->state.pgc->audio_control[audioN] & (1<<15)) )
-          audioN = -1;
-      }
-
-      activeStream = ConvertAudioStreamId_ExternalToXBMC(audioN);
-    }
+    int audioN = m_dll.dvdnav_get_active_audio_stream(m_dvdnav);
+    activeStream = ConvertAudioStreamId_ExternalToXBMC(audioN);
   }
 
   return activeStream;

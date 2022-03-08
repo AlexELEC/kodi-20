@@ -9,8 +9,9 @@
 #include "VideoBufferPoolDMA.h"
 
 #include "cores/VideoPlayer/Buffers/VideoBufferDMA.h"
-#include "threads/SingleLock.h"
 #include "utils/BufferObjectFactory.h"
+
+#include <mutex>
 
 #include <drm_fourcc.h>
 
@@ -25,7 +26,7 @@ extern "C"
 
 CVideoBufferPoolDMA::~CVideoBufferPoolDMA()
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   for (auto buf : m_all)
     delete buf;
@@ -33,7 +34,7 @@ CVideoBufferPoolDMA::~CVideoBufferPoolDMA()
 
 CVideoBuffer* CVideoBufferPoolDMA::Get()
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   CVideoBufferDMA* buf = nullptr;
   if (!m_free.empty())
@@ -64,7 +65,7 @@ CVideoBuffer* CVideoBufferPoolDMA::Get()
 
 void CVideoBufferPoolDMA::Return(int id)
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   m_all[id]->Unref();
   auto it = m_used.begin();
@@ -83,7 +84,7 @@ void CVideoBufferPoolDMA::Return(int id)
 
 void CVideoBufferPoolDMA::Configure(AVPixelFormat format, int size)
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   m_fourcc = TranslateFormat(format);
   m_size = static_cast<uint64_t>(size);
@@ -91,14 +92,14 @@ void CVideoBufferPoolDMA::Configure(AVPixelFormat format, int size)
 
 bool CVideoBufferPoolDMA::IsConfigured()
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   return (m_fourcc != 0 && m_size != 0);
 }
 
 bool CVideoBufferPoolDMA::IsCompatible(AVPixelFormat format, int size)
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   if (m_fourcc != TranslateFormat(format) || m_size != static_cast<uint64_t>(size))
     return false;

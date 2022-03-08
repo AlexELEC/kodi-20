@@ -18,13 +18,13 @@
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/SubtitlesSettings.h"
-#include "threads/SingleLock.h"
 #include "utils/FontUtils.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 
 #include <cstring>
+#include <mutex>
 
 using namespace KODI::SUBTITLES;
 using namespace UTILS;
@@ -103,14 +103,19 @@ void CDVDSubtitlesLibass::Configure()
   // Load additional fonts into Libass memory
   CFileItemList items;
   // Get fonts from system directory
-  XFILE::CDirectory::GetDirectory(UTILS::FONT::FONTPATH::SYSTEM, items,
-                                  UTILS::FONT::SUPPORTED_EXTENSIONS_MASK,
-                                  XFILE::DIR_FLAG_NO_FILE_DIRS | XFILE::DIR_FLAG_NO_FILE_INFO);
+  if (XFILE::CDirectory::Exists(UTILS::FONT::FONTPATH::SYSTEM))
+  {
+    XFILE::CDirectory::GetDirectory(UTILS::FONT::FONTPATH::SYSTEM, items,
+                                    UTILS::FONT::SUPPORTED_EXTENSIONS_MASK,
+                                    XFILE::DIR_FLAG_NO_FILE_DIRS | XFILE::DIR_FLAG_NO_FILE_INFO);
+  }
   // Get temporary fonts
-  XFILE::CDirectory::GetDirectory(
-      UTILS::FONT::FONTPATH::TEMP, items, UTILS::FONT::SUPPORTED_EXTENSIONS_MASK,
-      XFILE::DIR_FLAG_BYPASS_CACHE | XFILE::DIR_FLAG_NO_FILE_DIRS | XFILE::DIR_FLAG_NO_FILE_INFO);
-
+  if (XFILE::CDirectory::Exists(UTILS::FONT::FONTPATH::SYSTEM, false))
+  {
+    XFILE::CDirectory::GetDirectory(
+        UTILS::FONT::FONTPATH::TEMP, items, UTILS::FONT::SUPPORTED_EXTENSIONS_MASK,
+        XFILE::DIR_FLAG_BYPASS_CACHE | XFILE::DIR_FLAG_NO_FILE_DIRS | XFILE::DIR_FLAG_NO_FILE_INFO);
+  }
   for (const auto& item : items)
   {
     if (item->m_bIsFolder)
@@ -157,7 +162,7 @@ void CDVDSubtitlesLibass::Configure()
 
 bool CDVDSubtitlesLibass::DecodeHeader(char* data, int size)
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_library || !data)
     return false;
 
@@ -170,7 +175,7 @@ bool CDVDSubtitlesLibass::DecodeHeader(char* data, int size)
 
 bool CDVDSubtitlesLibass::DecodeDemuxPkt(const char* data, int size, double start, double duration)
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_track)
   {
     CLog::Log(LOGERROR, "{} - No SSA header found.", __FUNCTION__);
@@ -185,7 +190,7 @@ bool CDVDSubtitlesLibass::DecodeDemuxPkt(const char* data, int size, double star
 
 bool CDVDSubtitlesLibass::CreateTrack()
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_library)
   {
     CLog::Log(LOGERROR, "{} - Failed to create ASS track, library not initialized.", __FUNCTION__);
@@ -213,7 +218,7 @@ bool CDVDSubtitlesLibass::CreateTrack()
 
 bool CDVDSubtitlesLibass::CreateStyle()
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_library)
   {
     CLog::Log(LOGERROR, "{} - Failed to create ASS style, library not initialized.", __FUNCTION__);
@@ -232,7 +237,7 @@ bool CDVDSubtitlesLibass::CreateStyle()
 
 bool CDVDSubtitlesLibass::CreateTrack(char* buf, size_t size)
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_library)
   {
     CLog::Log(LOGERROR, "{} - No ASS library struct (m_library)", __FUNCTION__);
@@ -255,7 +260,7 @@ ASS_Image* CDVDSubtitlesLibass::RenderImage(
     const std::shared_ptr<struct KODI::SUBTITLES::style>& subStyle,
     int* changes)
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_renderer || !m_track)
   {
     CLog::Log(LOGERROR, "{} - ASS renderer/ASS track not initialized.", __FUNCTION__);
@@ -274,12 +279,13 @@ ASS_Image* CDVDSubtitlesLibass::RenderImage(
     m_drawWithinBlackBars = subStyle->drawWithinBlackBars;
   }
 
-  double sar = static_cast<double>(opts.sourceWidth / opts.sourceHeight);
-  double dar = static_cast<double>(opts.videoWidth / opts.videoHeight);
+  double sar = static_cast<double>(opts.sourceWidth) / static_cast<double>(opts.sourceHeight);
+  double dar = static_cast<double>(opts.videoWidth) / static_cast<double>(opts.videoHeight);
 
   ass_set_frame_size(m_renderer, static_cast<int>(opts.frameWidth),
                      static_cast<int>(opts.frameHeight));
-
+  ass_set_storage_size(m_renderer, static_cast<int>(opts.sourceWidth),
+                       static_cast<int>(opts.sourceHeight));
   if (m_drawWithinBlackBars)
   {
     int marginTop = static_cast<int>((opts.frameHeight - opts.videoHeight) / 2);
@@ -291,7 +297,7 @@ ASS_Image* CDVDSubtitlesLibass::RenderImage(
   // Vertical text position in percent (if 0 do nothing)
   ass_set_line_position(m_renderer, opts.position);
 
-  ass_set_pixel_aspect(m_renderer, sar / dar);
+  ass_set_pixel_aspect(m_renderer, dar / sar);
 
   // For posterity ass_render_frame have an inconsistent rendering for overlapped subtitles cases,
   // if the playback occurs in sequence (without seeks) the overlapped subtitles lines will be rendered in right order
@@ -533,7 +539,7 @@ void CDVDSubtitlesLibass::ConfigureAssOverride(
 
 ASS_Event* CDVDSubtitlesLibass::GetEvents()
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_track)
   {
     CLog::Log(LOGERROR, "{} -  Missing ASS structs (m_track)", __FUNCTION__);
@@ -544,7 +550,7 @@ ASS_Event* CDVDSubtitlesLibass::GetEvents()
 
 int CDVDSubtitlesLibass::GetNrOfEvents() const
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_track)
     return 0;
   return m_track->n_events;
@@ -568,7 +574,7 @@ int CDVDSubtitlesLibass::AddEvent(const char* text,
     return ASS_NO_ID;
   }
 
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_library || !m_track)
   {
     CLog::Log(LOGERROR, "{} - Missing ASS structs (m_library or m_track)", __FUNCTION__);
@@ -599,7 +605,7 @@ int CDVDSubtitlesLibass::AddEvent(const char* text,
 
 void CDVDSubtitlesLibass::AppendTextToEvent(int eventId, const char* text)
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (eventId == ASS_NO_ID || text == NULL || text[0] == '\0')
     return;
   if (!m_track)
@@ -631,7 +637,7 @@ void CDVDSubtitlesLibass::AppendTextToEvent(int eventId, const char* text)
 
 void CDVDSubtitlesLibass::ChangeEventStopTime(int eventId, double stopTime)
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (eventId == ASS_NO_ID)
     return;
   if (!m_track)
@@ -655,7 +661,7 @@ void CDVDSubtitlesLibass::ChangeEventStopTime(int eventId, double stopTime)
 
 void CDVDSubtitlesLibass::FlushEvents()
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_library || !m_track)
   {
     CLog::Log(LOGERROR, "{} - Missing ASS structs (m_library or m_track)", __FUNCTION__);
@@ -667,7 +673,7 @@ void CDVDSubtitlesLibass::FlushEvents()
 
 int CDVDSubtitlesLibass::DeleteEvents(int nEvents, int threshold)
 {
-  CSingleLock lock(m_section);
+  std::unique_lock<CCriticalSection> lock(m_section);
   if (!m_library || !m_track)
   {
     CLog::Log(LOGERROR, "{} - Missing ASS structs (m_library or m_track)", __FUNCTION__);

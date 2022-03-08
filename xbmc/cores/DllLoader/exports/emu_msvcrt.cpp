@@ -6,10 +6,11 @@
  *  See LICENSES/README.md for more information.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
 #include <math.h>
+#include <mutex>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #ifndef TARGET_POSIX
 #include <io.h>
 #include <direct.h>
@@ -53,7 +54,6 @@
 #include "filesystem/SpecialProtocol.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
-#include "threads/SingleLock.h"
 #include "util/EmuFileWrapper.h"
 #include "utils/log.h"
 #ifndef TARGET_POSIX
@@ -1591,7 +1591,7 @@ extern "C"
 
   //Critical Section has been fixed in EMUkernel32.cpp
 
-  int dll_initterm(PFV * start, PFV * end)        //pncrt.dll
+  int dll_initterm(PFV* start, const PFV* end) //pncrt.dll
   {
     PFV * temp;
     for (temp = start; temp < end; temp ++)
@@ -1840,7 +1840,7 @@ extern "C"
           value[size - 1] = '\0';
 
         {
-          CSingleLock lock(dll_cs_environ);
+          std::unique_lock<CCriticalSection> lock(dll_cs_environ);
 
           char** free_position = NULL;
           for (int i = 0; i < EMU_MAX_ENVIRONMENT_ITEMS && free_position == NULL; i++)
@@ -1891,7 +1891,7 @@ extern "C"
     char* value = NULL;
 
     {
-      CSingleLock lock(dll_cs_environ);
+      std::unique_lock<CCriticalSection> lock(dll_cs_environ);
 
       update_emu_environ();//apply any changes
 
@@ -2026,21 +2026,24 @@ extern "C"
 
   struct mntent *dll_getmntent(FILE *fp)
   {
-    if (fp == NULL)
-      return NULL;
+    if (!fp)
+      return nullptr;
 
+#if defined(TARGET_LINUX)
+    struct mntent* mountPoint = getmntent(fp);
+    if (mountPoint)
+      return mountPoint;
+
+    // warn if this is a kodi vfs file not associated with a mountpoint
     CFile* pFile = g_emuFileWrapper.GetFileXbmcByStream(fp);
     if (pFile)
     {
-      CLog::Log(LOGERROR, "{} - getmntent is not implemented for our virtual filesystem",
-                __FUNCTION__);
-      return NULL;
+      CLog::LogF(LOGWARNING, "getmntent is not implemented for our virtual filesystem");
     }
-#if defined(TARGET_LINUX)
-    return getmntent(fp);
+    return nullptr;
 #else
-    CLog::Log(LOGWARNING, "{} - unimplemented function called", __FUNCTION__);
-    return NULL;
+    CLog::LogF(LOGWARNING, "Unimplemented function called");
+    return nullptr;
 #endif
   }
 

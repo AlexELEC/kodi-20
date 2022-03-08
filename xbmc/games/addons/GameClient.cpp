@@ -31,7 +31,6 @@
 #include "input/actions/ActionIDs.h"
 #include "messaging/ApplicationMessenger.h"
 #include "messaging/helpers/DialogOKHelper.h"
-#include "threads/SingleLock.h"
 #include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
@@ -39,6 +38,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iterator>
+#include <mutex>
 #include <utility>
 
 using namespace KODI;
@@ -220,7 +220,7 @@ bool CGameClient::OpenFile(const CFileItem& file,
   std::string path = translatedUrl.Get();
   CLog::Log(LOGDEBUG, "GameClient: Loading {}", CURL::GetRedacted(path));
 
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   if (!Initialized())
     return false;
@@ -228,6 +228,9 @@ bool CGameClient::OpenFile(const CFileItem& file,
   CloseFile();
 
   GAME_ERROR error = GAME_ERROR_FAILED;
+
+  // Loading the game might require the stream subsystem to be initialized
+  Streams().Initialize(streamManager);
 
   try
   {
@@ -241,11 +244,13 @@ bool CGameClient::OpenFile(const CFileItem& file,
   if (error != GAME_ERROR_NO_ERROR)
   {
     NotifyError(error);
+    Streams().Deinitialize();
     return false;
   }
 
   if (!InitializeGameplay(file.GetPath(), streamManager, input))
   {
+    Streams().Deinitialize();
     return false;
   }
 
@@ -256,7 +261,7 @@ bool CGameClient::OpenStandalone(RETRO::IStreamManager& streamManager, IGameInpu
 {
   CLog::Log(LOGDEBUG, "GameClient: Loading {} in standalone mode", ID());
 
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   if (!Initialized())
     return false;
@@ -294,7 +299,6 @@ bool CGameClient::InitializeGameplay(const std::string& gamePath,
 {
   if (LoadGameInfo())
   {
-    Streams().Initialize(streamManager);
     Input().Start(input);
 
     m_bIsPlaying = true;
@@ -434,7 +438,7 @@ std::string CGameClient::GetMissingResource()
 
 void CGameClient::Reset()
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   if (m_bIsPlaying)
   {
@@ -451,7 +455,7 @@ void CGameClient::Reset()
 
 void CGameClient::CloseFile()
 {
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   if (m_bIsPlaying)
   {
@@ -483,14 +487,14 @@ void CGameClient::RunFrame()
   IGameInputCallback* input;
 
   {
-    CSingleLock lock(m_critSection);
+    std::unique_lock<CCriticalSection> lock(m_critSection);
     input = m_input;
   }
 
   if (input)
     input->PollInput();
 
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   if (m_bIsPlaying)
   {
@@ -510,7 +514,7 @@ bool CGameClient::Serialize(uint8_t* data, size_t size)
   if (data == nullptr || size == 0)
     return false;
 
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   bool bSuccess = false;
   if (m_bIsPlaying)
@@ -533,7 +537,7 @@ bool CGameClient::Deserialize(const uint8_t* data, size_t size)
   if (data == nullptr || size == 0)
     return false;
 
-  CSingleLock lock(m_critSection);
+  std::unique_lock<CCriticalSection> lock(m_critSection);
 
   bool bSuccess = false;
   if (m_bIsPlaying)

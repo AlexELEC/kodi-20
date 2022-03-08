@@ -10,9 +10,10 @@
 
 #include "FileItem.h"
 #include "URL.h"
-#include "threads/SingleLock.h"
 #include "threads/Thread.h"
 #include "utils/log.h"
+
+#include <mutex>
 
 CBackgroundInfoLoader::CBackgroundInfoLoader() : m_thread (NULL)
 {
@@ -39,7 +40,7 @@ void CBackgroundInfoLoader::Run()
       // Stage 1: All "fast" stuff we have already cached
       for (std::vector<CFileItemPtr>::const_iterator iter = m_vecItems.begin(); iter != m_vecItems.end(); ++iter)
       {
-        CFileItemPtr pItem = *iter;
+        const CFileItemPtr& pItem = *iter;
 
         // Ask the callback if we should abort
         if ((m_pProgressCallback && m_pProgressCallback->Abort()) || m_bStop)
@@ -61,7 +62,7 @@ void CBackgroundInfoLoader::Run()
       // Stage 2: All "slow" stuff that we need to lookup
       for (std::vector<CFileItemPtr>::const_iterator iter = m_vecItems.begin(); iter != m_vecItems.end(); ++iter)
       {
-        CFileItemPtr pItem = *iter;
+        const CFileItemPtr& pItem = *iter;
 
         // Ask the callback if we should abort
         if ((m_pProgressCallback && m_pProgressCallback->Abort()) || m_bStop)
@@ -98,7 +99,7 @@ void CBackgroundInfoLoader::Load(CFileItemList& items)
   if (items.IsEmpty())
     return;
 
-  CSingleLock lock(m_lock);
+  std::unique_lock<CCriticalSection> lock(m_lock);
 
   for (int nItem=0; nItem < items.Size(); nItem++)
     m_vecItems.push_back(items[nItem]);
