@@ -322,35 +322,6 @@ if(FFMPEG_FOUND)
   set(LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
   list(APPEND LINKER_FLAGS ${SYSTEM_LDFLAGS})
 
-  externalproject_add(ffmpeg
-                      URL ${FFMPEG_URL}
-                      URL_HASH ${FFMPEG_HASH}
-                      DOWNLOAD_NAME ${FFMPEG_ARCHIVE}
-                      DOWNLOAD_DIR ${TARBALL_DIR}
-                      PREFIX ${CORE_BUILD_DIR}/ffmpeg
-                      CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}
-                                 -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-                                 -DFFMPEG_VER=${FFMPEG_VER}
-                                 -DCORE_SYSTEM_NAME=${CORE_SYSTEM_NAME}
-                                 -DCORE_PLATFORM_NAME=${CORE_PLATFORM_NAME_LC}
-                                 -DCPU=${CPU}
-                                 -DENABLE_NEON=${ENABLE_NEON}
-                                 -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-                                 -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-                                 -DENABLE_CCACHE=${ENABLE_CCACHE}
-                                 -DCMAKE_C_FLAGS=${CMAKE_C_FLAGS}
-                                 -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
-                                 -DCMAKE_EXE_LINKER_FLAGS=${LINKER_FLAGS}
-                                 ${CROSS_ARGS}
-                                 ${FFMPEG_OPTIONS}
-                                 -DPKG_CONFIG_PATH=${CMAKE_BINARY_DIR}/${CORE_BUILD_DIR}/lib/pkgconfig
-                      PATCH_COMMAND ${CMAKE_COMMAND} -E copy
-                                    ${CMAKE_SOURCE_DIR}/tools/depends/target/ffmpeg/CMakeLists.txt
-                                    <SOURCE_DIR> &&
-                                    ${CMAKE_COMMAND} -E copy
-                                    ${CMAKE_SOURCE_DIR}/tools/depends/target/ffmpeg/FindGnuTls.cmake
-                                    <SOURCE_DIR>)
-
   if (ENABLE_INTERNAL_DAV1D)
     add_dependencies(ffmpeg dav1d)
   endif()
