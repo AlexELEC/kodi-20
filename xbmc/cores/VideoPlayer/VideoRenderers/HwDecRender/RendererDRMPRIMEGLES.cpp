@@ -321,7 +321,7 @@ void CRendererDRMPRIMEGLES::RenderUpdate(
   }
 
   bool toneMap = false;
-  int toneMapMethod = m_videoSettings.m_ToneMapMethod;
+  ETONEMAPMETHOD toneMapMethod = m_videoSettings.m_ToneMapMethod;
 
   if (!m_passthroughHDR && toneMapMethod != VS_TONEMAPMETHOD_OFF)
   {
