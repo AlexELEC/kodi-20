@@ -30,7 +30,7 @@ class BaseYUV2RGBGLSLShader : public CGLSLShaderProgram
                           AVColorPrimaries dst,
                           AVColorPrimaries src,
                           bool toneMap,
-                          int toneMapMethod);
+                          ETONEMAPMETHOD toneMapMethod);
     ~BaseYUV2RGBGLSLShader() override;
     void SetField(int field) { m_field = field; }
     void SetWidth(int w) { m_width = w; }
@@ -68,7 +68,7 @@ class BaseYUV2RGBGLSLShader : public CGLSLShaderProgram
     bool m_hasLightMetadata{false};
     AVContentLightMetadata m_lightMetadata;
     bool m_toneMapping{false};
-    int m_toneMappingMethod{VS_TONEMAPMETHOD_REINHARD};
+    ETONEMAPMETHOD m_toneMappingMethod{VS_TONEMAPMETHOD_REINHARD};
     float m_toneMappingParam{1.0};
 
     bool m_colorConversion{false};
@@ -116,7 +116,7 @@ class BaseYUV2RGBGLSLShader : public CGLSLShaderProgram
                              AVColorPrimaries dstPrimaries,
                              AVColorPrimaries srcPrimaries,
                              bool toneMap,
-                             int toneMapMethod);
+                             ETONEMAPMETHOD toneMapMethod);
   };
 
   class YUV2RGBBobShader : public BaseYUV2RGBGLSLShader
@@ -126,7 +126,7 @@ class BaseYUV2RGBGLSLShader : public CGLSLShaderProgram
                      AVColorPrimaries dstPrimaries,
                      AVColorPrimaries srcPrimaries,
                      bool toneMap,
-                     int toneMapMethod);
+                     ETONEMAPMETHOD toneMapMethod);
     void OnCompiledAndLinked() override;
     bool OnEnabled() override;
 

@@ -27,7 +27,7 @@ BaseYUV2RGBGLSLShader::BaseYUV2RGBGLSLShader(EShaderFormat format,
                                              AVColorPrimaries dstPrimaries,
                                              AVColorPrimaries srcPrimaries,
                                              bool toneMap,
-                                             int toneMapMethod)
+                                             ETONEMAPMETHOD toneMapMethod)
 {
   m_width = 1;
   m_height = 1;
@@ -256,7 +256,7 @@ YUV2RGBProgressiveShader::YUV2RGBProgressiveShader(EShaderFormat format,
                                                    AVColorPrimaries dstPrimaries,
                                                    AVColorPrimaries srcPrimaries,
                                                    bool toneMap,
-                                                   int toneMapMethod)
+                                                   ETONEMAPMETHOD toneMapMethod)
   : BaseYUV2RGBGLSLShader(format, dstPrimaries, srcPrimaries, toneMap, toneMapMethod)
 {
   PixelShader()->LoadSource("gles_yuv2rgb_basic.frag", m_defines);
@@ -272,7 +272,7 @@ YUV2RGBBobShader::YUV2RGBBobShader(EShaderFormat format,
                                    AVColorPrimaries dstPrimaries,
                                    AVColorPrimaries srcPrimaries,
                                    bool toneMap,
-                                   int toneMapMethod)
+                                   ETONEMAPMETHOD toneMapMethod)
   : BaseYUV2RGBGLSLShader(format, dstPrimaries, srcPrimaries, toneMap, toneMapMethod)
 {
   m_hStepX = -1;

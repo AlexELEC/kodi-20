@@ -4452,7 +4452,8 @@ bool CVideoDatabase::GetVideoSettings(int idFile, CVideoSettings &settings)
       settings.m_StereoMode = m_pDS->fv("StereoMode").get_asInt();
       settings.m_StereoInvert = m_pDS->fv("StereoInvert").get_asBool();
       settings.m_VideoStream = m_pDS->fv("VideoStream").get_asInt();
-      settings.m_ToneMapMethod = m_pDS->fv("TonemapMethod").get_asInt();
+      settings.m_ToneMapMethod =
+          static_cast<ETONEMAPMETHOD>(m_pDS->fv("TonemapMethod").get_asInt());
       settings.m_ToneMapParam = m_pDS->fv("TonemapParam").get_asFloat();
       settings.m_Orientation = m_pDS->fv("Orientation").get_asInt();
       settings.m_CenterMixLevel = m_pDS->fv("CenterMixLevel").get_asInt();
@@ -9931,7 +9932,7 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
         for (const auto &i : artwork)
         {
           std::string savedThumb = item.GetLocalArt(i.first, false);
-          CTextureCache::GetInstance().Export(i.second, savedThumb, overwrite);
+          CServiceBroker::GetTextureCache()->Export(i.second, savedThumb, overwrite);
         }
         if (actorThumbs)
           ExportActorThumbs(actorsDir, movie, !singleFile, overwrite);
@@ -9980,7 +9981,7 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
           for (const auto& art : artwork)
           {
             std::string savedThumb = URIUtils::AddFileToFolder(itemPath, art.first);
-            CTextureCache::GetInstance().Export(art.second, savedThumb, overwrite);
+            CServiceBroker::GetTextureCache()->Export(art.second, savedThumb, overwrite);
           }
         }
         else
@@ -10075,7 +10076,7 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
         for (const auto &i : artwork)
         {
           std::string savedThumb = item.GetLocalArt(i.first, false);
-          CTextureCache::GetInstance().Export(i.second, savedThumb, overwrite);
+          CServiceBroker::GetTextureCache()->Export(i.second, savedThumb, overwrite);
         }
       }
       m_pDS->next();
@@ -10171,7 +10172,7 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
         for (const auto &i : artwork)
         {
           std::string savedThumb = item.GetLocalArt(i.first, true);
-          CTextureCache::GetInstance().Export(i.second, savedThumb, overwrite);
+          CServiceBroker::GetTextureCache()->Export(i.second, savedThumb, overwrite);
         }
 
         if (actorThumbs)
@@ -10191,7 +10192,7 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
           {
             std::string savedThumb(item.GetLocalArt(seasonThumb + "-" + j.first, true));
             if (!i.second.empty())
-              CTextureCache::GetInstance().Export(j.second, savedThumb, overwrite);
+              CServiceBroker::GetTextureCache()->Export(j.second, savedThumb, overwrite);
           }
         }
       }
@@ -10271,7 +10272,7 @@ void CVideoDatabase::ExportToXML(const std::string &path, bool singleFile /* = t
           for (const auto &i : artwork)
           {
             std::string savedThumb = item.GetLocalArt(i.first, false);
-            CTextureCache::GetInstance().Export(i.second, savedThumb, overwrite);
+            CServiceBroker::GetTextureCache()->Export(i.second, savedThumb, overwrite);
           }
           if (actorThumbs)
             ExportActorThumbs(actorsDir, episode, !singleFile, overwrite);
@@ -10359,7 +10360,7 @@ void CVideoDatabase::ExportActorThumbs(const std::string &strDir, const CVideoIn
     if (!i.thumb.empty())
     {
       std::string thumbFile(GetSafeFile(strPath, i.strName));
-      CTextureCache::GetInstance().Export(i.thumb, thumbFile, overwrite);
+      CServiceBroker::GetTextureCache()->Export(i.thumb, thumbFile, overwrite);
     }
   }
 }
