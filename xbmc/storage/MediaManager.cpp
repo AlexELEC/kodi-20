@@ -46,10 +46,6 @@
 #include "utils/XMLUtils.h"
 #include "utils/log.h"
 
-#if defined(TARGET_POSIX) && !defined(TARGET_DARWIN) && !defined(TARGET_FREEBSD)
-#include <sys/ioctl.h>
-#include <linux/cdrom.h>
-#endif
 #include <string>
 #include <vector>
 
@@ -64,7 +60,6 @@ const char MEDIA_SOURCES_XML[] = { "special://profile/mediasources.xml" };
 CMediaManager::CMediaManager()
 {
   m_bhasoptical = false;
-  m_platformStorage = nullptr;
 }
 
 void CMediaManager::Stop()
@@ -72,8 +67,7 @@ void CMediaManager::Stop()
   if (m_platformStorage)
     m_platformStorage->Stop();
 
-  delete m_platformStorage;
-  m_platformStorage = nullptr;
+  m_platformStorage.reset();
 }
 
 void CMediaManager::Initialize()
@@ -626,20 +620,25 @@ void CMediaManager::EjectTray( const bool bEject, const char cDriveLetter )
 void CMediaManager::CloseTray(const char cDriveLetter)
 {
 #ifdef HAS_DVD_DRIVE
-#if defined(TARGET_DARWIN)
-  // FIXME...
-#elif defined(TARGET_FREEBSD)
-  // NYI
-#elif defined(TARGET_POSIX)
-  char* dvdDevice = CLibcdio::GetInstance()->GetDeviceFileName();
-  if (strlen(dvdDevice) != 0)
+#if defined(TARGET_POSIX)
+  std::shared_ptr<CLibcdio> libCdio = CLibcdio::GetInstance();
+  if (!libCdio)
   {
-    int fd = open(dvdDevice, O_RDONLY | O_NONBLOCK);
-    if (fd >= 0)
-    {
-      ioctl(fd, CDROMCLOSETRAY, 0);
-      close(fd);
-    }
+    CLog::LogF(LOGERROR, "Failed to obtain cdio handler");
+    return;
+  }
+
+  char* dvdDevice = libCdio->GetDeviceFileName();
+  if (!dvdDevice)
+  {
+    CLog::LogF(LOGERROR, "Failed to obtain default disc device");
+  }
+
+  driver_return_code_t ret = libCdio->cdio_close_tray(dvdDevice, nullptr);
+  if (ret != DRIVER_OP_SUCCESS)
+  {
+    CLog::LogF(LOGERROR, "Closing tray failed for device {}: {}", dvdDevice,
+               libCdio->cdio_driver_errmsg(ret));
   }
 #elif defined(TARGET_WINDOWS)
   CWIN32Util::CloseTray(cDriveLetter);
