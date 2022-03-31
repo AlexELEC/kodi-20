@@ -233,7 +233,7 @@ bool CRenderManager::Configure()
 
     m_renderState = STATE_CONFIGURED;
 
-    CLog::Log(LOGDEBUG, "CRenderManager::Configure - {}", m_QueueSize);
+    CLog::Log(LOGDEBUG, "CRenderManager::{} - queue size: {}", __FUNCTION__, m_QueueSize);
   }
   else
     m_renderState = STATE_UNCONFIGURED;
@@ -484,10 +484,12 @@ void CRenderManager::CreateRenderer()
       m_pRenderer = VIDEOPLAYER::CRendererFactory::CreateRenderer(id, buffer);
       if (m_pRenderer)
       {
+        CLog::Log(LOGDEBUG, "CRenderManager::{} - using renderer: {}", __FUNCTION__, id);
         return;
       }
     }
     m_pRenderer = VIDEOPLAYER::CRendererFactory::CreateRenderer("default", buffer);
+    CLog::Log(LOGDEBUG, "CRenderManager::{} - using default renderer", __FUNCTION__);
   }
 }
 
@@ -495,7 +497,7 @@ void CRenderManager::DeleteRenderer()
 {
   if (m_pRenderer)
   {
-    CLog::Log(LOGDEBUG, "{} - deleting renderer", __FUNCTION__);
+    CLog::Log(LOGDEBUG, "CRenderManager::{} - deleting renderer", __FUNCTION__);
 
     delete m_pRenderer;
     m_pRenderer = NULL;

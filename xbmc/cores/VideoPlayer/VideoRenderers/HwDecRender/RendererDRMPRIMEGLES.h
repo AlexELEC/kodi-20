@@ -8,10 +8,21 @@
 
 #pragma once
 
-#include "DRMPRIMEEGL.h"
 #include "cores/VideoPlayer/VideoRenderers/BaseRenderer.h"
 
 #include <memory>
+
+extern "C"
+{
+#include <libavutil/mastering_display_metadata.h>
+}
+
+namespace Shaders {
+namespace GLES
+{
+class YUV2RGBProgressiveShader;
+}
+}
 
 namespace KODI
 {
@@ -23,6 +34,9 @@ class CEGLFence;
 }
 } // namespace UTILS
 } // namespace KODI
+
+class CDRMPRIMETexture;
+class CVideoLayerBridgeDRMPRIME;
 
 class CRendererDRMPRIMEGLES : public CBaseRenderer
 {
@@ -56,15 +70,41 @@ public:
 
 private:
   void DrawBlackBars();
-  void Render(unsigned int flags, int index);
+
+  AVColorPrimaries GetSrcPrimaries(AVColorPrimaries srcPrimaries,
+                                   unsigned int width,
+                                   unsigned int height);
+
+  bool m_reloadShaders;
+
+  EShaderFormat m_shaderFormat{SHADER_NONE};
 
   bool m_configured = false;
   float m_clearColour{0.0f};
+
+  bool m_fullRange;
+  AVColorPrimaries m_srcPrimaries;
+  bool m_toneMap = false;
+  ETONEMAPMETHOD m_toneMapMethod = VS_TONEMAPMETHOD_OFF;
+  bool m_passthroughHDR = false;
 
   struct BUFFER
   {
     CVideoBuffer* videoBuffer = nullptr;
     std::unique_ptr<KODI::UTILS::EGL::CEGLFence> fence;
-    CDRMPRIMETexture texture;
+    std::unique_ptr<CDRMPRIMETexture> texture;
+
+    AVColorPrimaries m_srcPrimaries;
+    AVColorSpace m_srcColSpace;
+    int m_srcBits{8};
+    int m_srcTextureBits{8};
+    bool m_srcFullRange;
+
+    bool hasDisplayMetadata{false};
+    AVMasteringDisplayMetadata displayMetadata;
+    bool hasLightMetadata{false};
+    AVContentLightMetadata lightMetadata;
   } m_buffers[NUM_BUFFERS];
+
+  std::unique_ptr<Shaders::GLES::YUV2RGBProgressiveShader> m_progressiveShader;
 };
