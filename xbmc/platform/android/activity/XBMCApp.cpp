@@ -243,7 +243,7 @@ void CXBMCApp::onStart()
     m_activityManager =
         std::make_unique<CJNIActivityManager>(getSystemService(CJNIContext::ACTIVITY_SERVICE));
     m_inputHandler.setDPI(GetDPI());
-    RegisterDisplayListener();
+    runNativeOnUiThread(RegisterDisplayListenerCallback, nullptr);
   }
 }
 
@@ -385,13 +385,13 @@ void CXBMCApp::onLostFocus()
   m_hasFocus = false;
 }
 
-void CXBMCApp::RegisterDisplayListener()
+void CXBMCApp::RegisterDisplayListenerCallback(CVariant*)
 {
   CJNIDisplayManager displayManager(getSystemService("display"));
   if (displayManager)
   {
     android_printf("CXBMCApp: installing DisplayManager::DisplayListener");
-    displayManager.registerDisplayListener(m_displayListener.get_raw());
+    displayManager.registerDisplayListener(CXBMCApp::Get().getDisplayListener());
   }
 }
 
@@ -968,16 +968,26 @@ bool CXBMCApp::GetExternalStorage(std::string &path, const std::string &type /* 
 
 bool CXBMCApp::GetStorageUsage(const std::string &path, std::string &usage)
 {
-#define PATH_MAXLEN 50
+#define PATH_MAXLEN 38
 
   if (path.empty())
   {
     std::ostringstream fmt;
-    fmt.width(PATH_MAXLEN);  fmt << std::left  << "Filesystem";
-    fmt.width(12);  fmt << std::right << "Size";
-    fmt.width(12);  fmt << "Used";
-    fmt.width(12);  fmt << "Avail";
-    fmt.width(12);  fmt << "Use %";
+
+    fmt.width(PATH_MAXLEN);
+    fmt << std::left << "Filesystem";
+
+    fmt.width(12);
+    fmt << std::right << "Size";
+
+    fmt.width(12);
+    fmt << "Used";
+
+    fmt.width(12);
+    fmt << "Avail";
+
+    fmt.width(12);
+    fmt << "Use %";
 
     usage = fmt.str();
     return false;
@@ -997,14 +1007,26 @@ bool CXBMCApp::GetStorageUsage(const std::string &path, std::string &usage)
   float usedPercentage = usedSize / totalSize * 100;
 
   std::ostringstream fmt;
+
   fmt << std::fixed;
   fmt.precision(1);
-  fmt.width(PATH_MAXLEN);  fmt << std::left  << (path.size() < PATH_MAXLEN-1 ? path : StringUtils::Left(path, PATH_MAXLEN-4) + "...");
-  fmt.width(12);  fmt << std::right << totalSize << "G"; // size in GB
-  fmt.width(12);  fmt << usedSize << "G"; // used in GB
-  fmt.width(12);  fmt << freeSize << "G"; // free
+
+  fmt.width(PATH_MAXLEN);
+  fmt << std::left
+      << (path.size() < PATH_MAXLEN - 1 ? path : StringUtils::Left(path, PATH_MAXLEN - 4) + "...");
+
+  fmt.width(11);
+  fmt << std::right << totalSize << "G";
+
+  fmt.width(11);
+  fmt << usedSize << "G";
+
+  fmt.width(11);
+  fmt << freeSize << "G";
+
   fmt.precision(0);
-  fmt.width(12);  fmt << usedPercentage << "%"; // percentage used
+  fmt.width(11);
+  fmt << usedPercentage << "%";
 
   usage = fmt.str();
   return true;
