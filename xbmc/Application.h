@@ -268,7 +268,6 @@ public:
 
   int GlobalIdleTime();
 
-  bool PlatformDirectoriesEnabled() { return m_bPlatformDirectories; }
   bool IsStandAlone() { return m_bStandalone; }
   bool IsEnableTestMode() { return m_bTestMode; }
 
@@ -277,8 +276,6 @@ public:
   bool IsAppFocused() const { return m_AppFocused; }
 
   bool ToggleDPMS(bool manual);
-
-  bool SwitchToFullScreen(bool force = false);
 
   bool GetRenderGUI() const override { return m_renderGUI; }
 
@@ -444,7 +441,6 @@ public:
 
 private:
   void PrintStartupLog();
-  void Preflight();
   void ResetCurrentItem();
 
   mutable CCriticalSection m_critSection; /*!< critical section for all changes to this class, except for changes to triggers */
