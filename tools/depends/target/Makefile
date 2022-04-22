@@ -77,13 +77,15 @@ endif
 ifeq ($(OS),osx)
   EXCLUDED_DEPENDS = libusb
   ifneq ($(CPU),arm64)
-    DEPENDS += libsdl
+    ifeq ($(WINDOW_SYSTEM),sdl)
+      DEPENDS += libsdl
+    endif
   endif
 endif
 
 ifeq ($(OS),android)
   EXCLUDED_DEPENDS = libcec libusb gtest
-  DEPENDS += dummy-libxbmc libuuid libandroidjni libzip
+  DEPENDS += dummy-libxbmc libuuid libzip
   PYMODULE_DEPS = dummy-libxbmc
   LIBUUID = libuuid
 endif
@@ -158,6 +160,7 @@ libplist: $(ZLIB)
 libpng: $(ZLIB)
 spdlog: fmt
 libva: libdrm $(LIBVA_DEPS)
+libxml2: $(ZLIB)
 libxslt: libgcrypt libxml2
 libzip: bzip2 gnutls $(ZLIB)
 mariadb: openssl $(ICONV) $(ZLIB)

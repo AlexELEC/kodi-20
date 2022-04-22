@@ -95,6 +95,11 @@ AC_ARG_WITH([rendersystem],
   [render system to use])],
   [app_rendersystem=$withval])
 
+AC_ARG_WITH([windowsystem],
+  [AS_HELP_STRING([--with-windowsystem],
+  [Windowing system to use])],
+  [app_winsystem=$withval])
+
 AC_ARG_WITH([target-cflags],
   [AS_HELP_STRING([--with-target-cflags],
   [C compiler flags (target)])],
@@ -423,6 +428,16 @@ case $host in
         fi
 
         target_minver="10.13"
+
+        # check provided window system is valid_sdk
+        # if no window system supplied, default to SDL for now.
+        if test -n "$app_winsystem"; then
+          if test "$app_winsystem" != "native" && test "$app_winsystem" != "sdl"; then
+            AC_MSG_ERROR(Window system must be native or sdl)
+          fi
+        else
+          app_winsystem=sdl
+        fi
       ;;
       aarch64-apple-darwin*)
         MC_CHECK_NOT_CPU([$use_cpu], "*86")
@@ -433,6 +448,7 @@ case $host in
           ;;
           osx)
             target_minver="11.0"
+            app_winsystem=native
           ;;
           *)
             AC_MSG_ERROR(invalid platform for architecture ($host))
@@ -553,34 +569,18 @@ if test "$platform_os" == "android"; then
   SORT_PARAMS=""
   sort -V /dev/null > /dev/null 2>&1 && SORT_PARAMS="-V"
   build_tools_path=$use_sdk_path/tools:$use_sdk_path/platform-tools:$use_sdk_path/build-tools/`ls $use_sdk_path/build-tools | sort $SORT_PARAMS | tail -n 1`
-
-  AC_PATH_PROG(AAPT,aapt,"no",$build_tools_path)
-  if test "x$AAPT" = "xno" ; then
-    AC_MSG_ERROR("Missing program: aapt")
-  fi
-
-  AC_PATH_PROG(D8,d8,"no",$build_tools_path)
-  if test "x$D8" = "xno" ; then
-    AC_PATH_PROG(DX,dx,"no",$build_tools_path)
-    if test "x$DX" = "xno" ; then
-      AC_MSG_ERROR("Missing program: dx or d8")
-    fi
-  fi
-
-  AC_PATH_PROG(ZIPALIGN,zipalign,"no",$build_tools_path)
-  if test "x$ZIPALIGN" = "xno" ; then
-    AC_MSG_ERROR("Missing program: zipalign")
-  fi
 fi
 
-# darwin needs unzip/zip in Codesign.command
+# darwin needs unzip in Codesign.command
 if test "$platform_os" = "android" || test "$platform_os" = "osx" || test "$platform_os" = "darwin_embedded"; then
   AC_CHECK_PROG(HAVE_UNZIP,unzip,"yes","no",)
   if test "x$HAVE_UNZIP" = "xno"; then
     AC_MSG_ERROR("Missing program: unzip")
   fi
 fi
-if test "$platform_os" = "osx" || test "$platform_os" = "darwin_embedded"; then
+# darwin needs zip in Codesign.command
+# android needs zip in tools/android/packaging/Makefile sharedobb target
+if test "$platform_os" = "android" || test "$platform_os" = "osx" || test "$platform_os" = "darwin_embedded"; then
   AC_CHECK_PROG(HAVE_ZIP,zip,"yes","no",)
   if test "x$HAVE_ZIP" = "xno"; then
     AC_MSG_ERROR("Missing program: zip")
@@ -702,6 +702,7 @@ AC_SUBST(use_gplv3)
 AC_SUBST(use_ccache)
 AC_SUBST(host_includes)
 AC_SUBST(app_rendersystem)
+AC_SUBST(app_winsystem)
 AC_SUBST(ffmpeg_options)
 
 AC_OUTPUT
