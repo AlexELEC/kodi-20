@@ -23,8 +23,10 @@ else()
   endif()
 endif()
 
-if(NOT TARBALL_DIR)
-  set(TARBALL_DIR "/Users/Shared/xbmc-depends/xbmc-tarballs")
+# m1 macs can execute x86_64 code via rosetta
+if(CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64" AND
+   CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+  set(HOST_CAN_EXECUTE_TARGET TRUE)
 endif()
 
 set(CMAKE_OSX_ARCHITECTURES ${CPU})
