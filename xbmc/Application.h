@@ -11,13 +11,12 @@
 #include "ApplicationPlayer.h"
 #include "ApplicationStackHelper.h"
 #include "ServiceManager.h"
+#include "application/ApplicationPowerHandling.h"
+#include "application/ApplicationVolumeHandling.h"
 #include "cores/IPlayerCallback.h"
 #include "guilib/IMsgTargetCallback.h"
 #include "guilib/IWindowManagerCallback.h"
 #include "messaging/IMessageTarget.h"
-#ifdef TARGET_WINDOWS
-#include "powermanagement/WinIdleTimer.h"
-#endif
 #include "settings/ISubSettings.h"
 #include "settings/lib/ISettingCallback.h"
 #include "settings/lib/ISettingsHandler.h"
@@ -28,7 +27,6 @@
 #include "threads/Thread.h"
 #include "utils/GlobalsHandling.h"
 #include "utils/Stopwatch.h"
-#include "windowing/OSScreenSaver.h"
 #include "windowing/Resolution.h"
 #include "windowing/XBMC_events.h"
 
@@ -89,10 +87,6 @@ namespace MUSIC_INFO
   class CMusicInfoScanner;
 }
 
-#define VOLUME_MINIMUM 0.0f        // -60dB
-#define VOLUME_MAXIMUM 1.0f        // 0dB
-#define VOLUME_DYNAMIC_RANGE 90.0f // 60dB
-
 // replay gain settings struct for quick access by the player multiple
 // times per second (saves doing settings lookup)
 struct ReplayGainSettings
@@ -125,7 +119,9 @@ class CApplication : public IWindowManagerCallback,
                      public ISettingCallback,
                      public ISettingsHandler,
                      public ISubSettings,
-                     public KODI::MESSAGING::IMessageTarget
+                     public KODI::MESSAGING::IMessageTarget,
+                     public CApplicationPowerHandling,
+                     public CApplicationVolumeHandling
 {
 friend class CAppInboundProtocol;
 
@@ -194,37 +190,14 @@ public:
   bool IsPlayingFullScreenVideo() const;
   bool IsFullScreen();
   bool OnAction(const CAction &action);
-  void CheckShutdown();
-  void InhibitIdleShutdown(bool inhibit);
-  bool IsIdleShutdownInhibited() const;
-  void InhibitScreenSaver(bool inhibit);
-  bool IsScreenSaverInhibited() const;
-  // Checks whether the screensaver and / or DPMS should become active.
-  void CheckScreenSaverAndDPMS();
-  void ActivateScreenSaver(bool forceType = false);
   void CloseNetworkShares();
 
   void ConfigureAndEnableAddons();
   void ShowAppMigrationMessage();
   void Process() override;
   void ProcessSlow();
-  void ResetScreenSaver();
-  float GetVolumePercent() const;
-  float GetVolumeRatio() const;
-  void SetVolume(float iValue, bool isPercentage = true);
-  bool IsMuted() const;
-  bool IsMutedInternal() const { return m_muted; }
-  void ToggleMute(void);
-  void SetMute(bool mute);
-  void ShowVolumeBar(const CAction *action = NULL);
   int GetSubtitleDelay();
   int GetAudioDelay();
-  void ResetSystemIdleTimer();
-  void ResetScreenSaverTimer();
-  void StopScreenSaverTimer();
-  // Wakes up from the screensaver and / or DPMS. Returns true if woken up.
-  bool WakeUpScreenSaverAndDPMS(bool bPowerOffKeyPressed = false);
-  bool WakeUpScreenSaver(bool bPowerOffKeyPressed = false);
   /*!
    \brief Returns the total time in fractional seconds of the currently playing media
 
@@ -245,9 +218,6 @@ public:
   void SeekPercentage(float percent);
   void SeekTime( double dTime = 0.0 );
 
-  void StopShutdownTimer();
-  void ResetShutdownTimers();
-
   void UpdateLibraries();
 
   void UpdateCurrentPlayArt();
@@ -258,19 +228,9 @@ public:
   std::unique_ptr<MEDIA_DETECT::CAutorun> m_Autorun;
 #endif
 
-  inline bool IsInScreenSaver() { return m_screensaverActive; }
-  inline std::string ScreensaverIdInUse() { return m_screensaverIdInUse; }
-
-  inline bool IsDPMSActive() { return m_dpmsIsActive; }
-  int m_iScreenSaveLock = 0; // spiff: are we checking for a lock? if so, ignore the screensaver state, if -1 we have failed to input locks
-
   std::string m_strPlayListFile;
 
-  int GlobalIdleTime();
-
   bool IsAppFocused() const { return m_AppFocused; }
-
-  bool ToggleDPMS(bool manual);
 
   bool GetRenderGUI() const override { return m_renderGUI; }
 
@@ -304,8 +264,6 @@ public:
   */
   void UnlockFrameMoveGuard();
 
-  void SetRenderGUI(bool renderGUI);
-
 protected:
   bool OnSettingsSaving() const override;
   bool Load(const TiXmlNode *settings) override;
@@ -318,7 +276,6 @@ protected:
 
   bool LoadSkin(const std::string& skinID);
 
-  void CheckOSScreenSaverInhibitionSetting();
   void PlaybackCleanup();
 
   // inbound protocol
@@ -353,36 +310,11 @@ protected:
 #if defined(TARGET_ANDROID)
   friend class CWinEventsAndroid;
 #endif
-  // screensaver
-  bool m_screensaverActive = false;
-  std::string m_screensaverIdInUse;
-  ADDON::AddonPtr m_pythonScreenSaver; // @warning: Fallback for Python interface, for binaries not needed!
-  // OS screen saver inhibitor that is always active if user selected a Kodi screen saver
-  KODI::WINDOWING::COSScreenSaverInhibitor m_globalScreensaverInhibitor;
-  // Inhibitor that is active e.g. during video playback
-  KODI::WINDOWING::COSScreenSaverInhibitor m_screensaverInhibitor;
-
   // timer information
-#ifdef TARGET_WINDOWS
-  CWinIdleTimer m_idleTimer;
-  CWinIdleTimer m_screenSaverTimer;
-#else
-  CStopWatch m_idleTimer;
-  CStopWatch m_screenSaverTimer;
-#endif
   CStopWatch m_restartPlayerTimer;
   CStopWatch m_frameTime;
-  CStopWatch m_navigationTimer;
   CStopWatch m_slowTimer;
-  CStopWatch m_shutdownTimer;
   XbmcThreads::EndTime<> m_guiRefreshTimer;
-
-  bool m_bInhibitIdleShutdown = false;
-  bool m_bInhibitScreenSaver = false;
-  bool m_bResetScreenSaver = false;
-
-  bool m_dpmsIsActive = false;
-  bool m_dpmsIsManual = false;
 
   CFileItemPtr m_itemCurrentFile;
 
@@ -395,28 +327,11 @@ protected:
   std::chrono::time_point<std::chrono::steady_clock> m_lastRenderTime;
   bool m_skipGuiRender = false;
 
-  bool m_bSystemScreenSaverEnable = false;
-
   std::unique_ptr<MUSIC_INFO::CMusicInfoScanner> m_musicInfoScanner;
-
-  bool m_muted = false;
-  float m_volumeLevel = VOLUME_MAXIMUM;
-
-  void Mute();
-  void UnMute();
-
-  void SetHardwareVolume(float hardwareVolume);
-
-  void VolumeChanged();
 
   bool PlayStack(CFileItem& item, bool bRestart);
 
-  float NavigationIdleTime();
   void HandlePortEvents();
-
-  /*! \brief Helper method to determine how to handle TMSG_SHUTDOWN
-  */
-  void HandleShutdownMessage();
 
   CInertialScrollingHandler *m_pInertialScrollingHandler;
 
@@ -428,7 +343,6 @@ protected:
 public:
   bool m_bStop{false};
   bool m_AppFocused{true};
-  bool m_renderGUI{false};
 
 private:
   void PrintStartupLog();
