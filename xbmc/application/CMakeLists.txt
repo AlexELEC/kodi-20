@@ -1,7 +1,11 @@
-set(SOURCES ApplicationPowerHandling.cpp
+set(SOURCES ApplicationPlayerCallback.cpp
+            ApplicationPowerHandling.cpp
+            ApplicationSkinHandling.cpp
             ApplicationVolumeHandling.cpp)
 
-set(HEADERS ApplicationPowerHandling.h
+set(HEADERS ApplicationPlayerCallback.h
+            ApplicationPowerHandling.h
+            ApplicationSkinHandling.h
             ApplicationVolumeHandling.h)
 
 core_add_library(application)
