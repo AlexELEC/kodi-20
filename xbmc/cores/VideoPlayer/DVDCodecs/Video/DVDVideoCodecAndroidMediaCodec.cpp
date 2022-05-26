@@ -14,7 +14,6 @@
 
 #include "DVDVideoCodecAndroidMediaCodec.h"
 
-#include "Application.h"
 #include "DVDCodecs/DVDFactoryCodec.h"
 #include "ServiceBroker.h"
 #include "cores/VideoPlayer/Buffers/VideoBuffer.h"
@@ -367,7 +366,7 @@ std::atomic<bool> CDVDVideoCodecAndroidMediaCodec::m_InstanceGuard(false);
 
 bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options)
 {
-  int num_codecs;
+  std::vector<CJNIMediaCodecInfo> codecInfos;
   int profile(0);
   CJNIUUID uuid(0, 0);
 
@@ -662,11 +661,10 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
 
   m_codec = nullptr;
   m_colorFormat = -1;
-  num_codecs = CJNIMediaCodecList::getCodecCount();
+  codecInfos = CJNIMediaCodecList(CJNIMediaCodecList::REGULAR_CODECS).getCodecInfos();
 
-  for (int i = 0; i < num_codecs; i++)
+  for (const CJNIMediaCodecInfo& codec_info : codecInfos)
   {
-    CJNIMediaCodecInfo codec_info = CJNIMediaCodecList::getCodecInfoAt(i);
     if (codec_info.isEncoder())
       continue;
 
@@ -1640,7 +1638,7 @@ void CDVDVideoCodecAndroidMediaCodec::InitSurfaceTexture(void)
   // to create/fetch/create from g_RenderManager. But g_RenderManager
   // does not know we are using MediaCodec until Configure and we
   // we need m_surfaceTexture valid before then. Chicken, meet Egg.
-  if (g_application.IsCurrentThread())
+  if (CServiceBroker::GetAppMessenger()->IsProcessThread())
   {
     // localize GLuint so we do not spew gles includes in our header
     GLuint texture_id;

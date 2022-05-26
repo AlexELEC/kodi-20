@@ -49,25 +49,24 @@ function(get_versionfile_data module_name)
 
   if(${UPPER_MODULE_NAME}_BYPRODUCT)
     # strip the extension, if debug, add DEBUG_POSTFIX and then add the extension back
-    if(${UPPER_MODULE_NAME}_DEBUG_POSTFIX)
+    if(DEFINED ${UPPER_MODULE_NAME}_DEBUG_POSTFIX)
       set(_POSTFIX ${${UPPER_MODULE_NAME}_DEBUG_POSTFIX})
     else()
       set(_POSTFIX ${DEBUG_POSTFIX})
     endif()
 
     # Only add debug postfix if platform or module supply a DEBUG_POSTFIX
-    if(NOT _POSTFIX STREQUAL "")
+    if(DEFINED _POSTFIX AND NOT _POSTFIX STREQUAL "")
       string(REGEX REPLACE "\\.[^.]*$" "" ${UPPER_MODULE_NAME}_BYPRODUCT_DEBUG ${${UPPER_MODULE_NAME}_BYPRODUCT})
       if(WIN32 OR WINDOWS_STORE)
         set(${UPPER_MODULE_NAME}_BYPRODUCT_DEBUG "${${UPPER_MODULE_NAME}_BYPRODUCT_DEBUG}${_POSTFIX}.lib")
       else()
         set(${UPPER_MODULE_NAME}_BYPRODUCT_DEBUG "${${UPPER_MODULE_NAME}_BYPRODUCT_DEBUG}${_POSTFIX}.a")
       endif()
-
-      # Set Debug and Release library names
+      # Set Debug library names
       set(${UPPER_MODULE_NAME}_LIBRARY_DEBUG ${DEPENDS_PATH}/lib/${${UPPER_MODULE_NAME}_BYPRODUCT_DEBUG} PARENT_SCOPE)
-      set(${UPPER_MODULE_NAME}_LIBRARY_RELEASE ${DEPENDS_PATH}/lib/${${UPPER_MODULE_NAME}_BYPRODUCT} PARENT_SCOPE)
     endif()
+    set(${UPPER_MODULE_NAME}_LIBRARY_RELEASE ${DEPENDS_PATH}/lib/${${UPPER_MODULE_NAME}_BYPRODUCT} PARENT_SCOPE)
     set(${UPPER_MODULE_NAME}_LIBRARY ${DEPENDS_PATH}/lib/${${UPPER_MODULE_NAME}_BYPRODUCT} PARENT_SCOPE)
   endif()
 
@@ -136,6 +135,28 @@ macro(BUILD_DEP_TARGET)
     if(CMAKE_TOOLCHAIN_FILE)
       list(APPEND CMAKE_ARGS "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}")
     endif()
+
+    # Set build type for dep build.
+    # if MODULE has set a manual build type, use it, otherwise use project build type
+    if(${MODULE}_BUILD_TYPE)
+      list(APPEND CMAKE_ARGS "-DCMAKE_BUILD_TYPE=${${MODULE}_BUILD_TYPE}")
+      # Build_type is forced, so unset the opposite <MODULE>_LIBRARY_<TYPE> to only give
+      # select_library_configurations one library name to choose from
+      if(${MODULE}_BUILD_TYPE STREQUAL "Release")
+        unset(${MODULE}_LIBRARY_DEBUG)
+      else()
+        unset(${MODULE}_LIBRARY_RELEASE)
+      endif()
+    else()
+      # single config generator (ie Make, Ninja)
+      if(CMAKE_BUILD_TYPE)
+        list(APPEND CMAKE_ARGS "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}")
+      else()
+        # Multi-config generators (eg VS, Xcode, Ninja Multi-Config) will not have CMAKE_BUILD_TYPE
+        # Use config genex to generate the types
+        list(APPEND CMAKE_ARGS "-DCMAKE_BUILD_TYPE=$<CONFIG>")
+      endif()
+    endif()
   endif()
 
   if(PATCH_COMMAND)
@@ -202,7 +223,7 @@ endmacro()
 # Macro to test format of line endings of a patch
 # Windows Specific
 macro(PATCH_LF_CHECK patch)
-  if(WIN32 OR WINDOWS_STORE)
+  if(CMAKE_HOST_WIN32)
     # On Windows "patch.exe" can only handle CR-LF line-endings.
     # Our patches have LF-only line endings - except when they
     # have been checked out as part of a dependency hosted on Git
