@@ -11,6 +11,7 @@
 #include "ApplicationPlayer.h"
 #include "ApplicationStackHelper.h"
 #include "ServiceManager.h"
+#include "application/ApplicationActionListeners.h"
 #include "application/ApplicationPlayerCallback.h"
 #include "application/ApplicationPowerHandling.h"
 #include "application/ApplicationSkinHandling.h"
@@ -47,7 +48,6 @@ class CSeekHandler;
 class CInertialScrollingHandler;
 class CSplash;
 class CBookmark;
-class IActionListener;
 class CGUIComponent;
 class CAppInboundProtocol;
 class CSettingsComponent;
@@ -89,16 +89,6 @@ namespace MUSIC_INFO
   class CMusicInfoScanner;
 }
 
-// replay gain settings struct for quick access by the player multiple
-// times per second (saves doing settings lookup)
-struct ReplayGainSettings
-{
-  int iPreAmp;
-  int iNoGainPreAmp;
-  int iType;
-  bool bAvoidClipping;
-};
-
 enum StartupAction
 {
   STARTUP_ACTION_NONE = 0,
@@ -121,6 +111,7 @@ class CApplication : public IWindowManagerCallback,
                      public ISettingsHandler,
                      public ISubSettings,
                      public KODI::MESSAGING::IMessageTarget,
+                     public CApplicationActionListeners,
                      public CApplicationPlayerCallback,
                      public CApplicationPowerHandling,
                      public CApplicationSkinHandling,
@@ -222,20 +213,7 @@ public:
   bool SetLanguage(const std::string &strLanguage);
   bool LoadLanguage(bool reload);
 
-  ReplayGainSettings& GetReplayGainSettings() { return m_replayGainSettings; }
-
   void SetLoggingIn(bool switchingProfiles);
-
-  /*!
-   \brief Register an action listener.
-   \param listener The listener to register
-   */
-  void RegisterActionListener(IActionListener *listener);
-  /*!
-   \brief Unregister an action listener.
-   \param listener The listener to unregister
-   */
-  void UnregisterActionListener(IActionListener *listener);
 
   std::unique_ptr<CServiceManager> m_ServiceManager;
 
@@ -263,13 +241,6 @@ protected:
 
   // inbound protocol
   bool OnEvent(XBMC_Event& newEvent);
-
-  /*!
-   \brief Delegates the action to all registered action handlers.
-   \param action The action
-   \return true, if the action was taken by one of the action listener.
-   */
-  bool NotifyActionListeners(const CAction &action) const;
 
   std::shared_ptr<ANNOUNCEMENT::CAnnouncementManager> m_pAnnouncementManager;
   std::unique_ptr<CGUIComponent> m_pGUI;
@@ -312,8 +283,6 @@ protected:
 
   CInertialScrollingHandler *m_pInertialScrollingHandler;
 
-  ReplayGainSettings m_replayGainSettings;
-  std::vector<IActionListener *> m_actionListeners;
   std::vector<ADDON::AddonInfoPtr>
       m_incompatibleAddons; /*!< Result of addon migration (incompatible addon infos) */
 

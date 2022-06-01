@@ -16,6 +16,7 @@
 #include "Util.h"
 #include "commons/Exception.h"
 #include "cores/FFmpeg.h"
+#include "cores/MenuType.h"
 #include "cores/VideoPlayer/Interface/TimingConstants.h" // for DVD_TIME_BASE
 #include "filesystem/CurlFile.h"
 #include "filesystem/Directory.h"
@@ -989,9 +990,13 @@ double CDVDDemuxFFmpeg::ConvertTimestamp(int64_t pts, int den, int num)
   double timestamp = (double)pts * num / den;
   double starttime = 0.0;
 
-  std::shared_ptr<CDVDInputStream::IMenus> menu = std::dynamic_pointer_cast<CDVDInputStream::IMenus>(m_pInput);
-  if (!menu && m_pFormatContext->start_time != (int64_t)AV_NOPTS_VALUE)
-    starttime = (double)m_pFormatContext->start_time / AV_TIME_BASE;
+  const std::shared_ptr<CDVDInputStream::IMenus> menuInterface =
+      std::dynamic_pointer_cast<CDVDInputStream::IMenus>(m_pInput);
+  if ((!menuInterface || menuInterface->GetSupportedMenuType() != MenuType::NATIVE) &&
+      m_pFormatContext->start_time != static_cast<int64_t>(AV_NOPTS_VALUE))
+  {
+    starttime = static_cast<double>(m_pFormatContext->start_time / AV_TIME_BASE);
+  }
 
   if (m_checkTransportStream)
     starttime = m_startTime;

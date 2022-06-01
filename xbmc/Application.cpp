@@ -222,7 +222,8 @@ using namespace std::chrono_literals;
 #define MAX_FFWD_SPEED 5
 
 CApplication::CApplication(void)
-  : CApplicationPlayerCallback(m_appPlayer, m_stackHelper),
+  : CApplicationActionListeners(m_critSection),
+    CApplicationPlayerCallback(m_appPlayer, m_stackHelper),
     CApplicationPowerHandling(m_appPlayer),
     CApplicationSkinHandling(m_appPlayer),
     CApplicationVolumeHandling(m_appPlayer)
@@ -485,10 +486,7 @@ bool CApplication::Create()
   CServiceBroker::RegisterAE(m_pActiveAE.get());
 
   // initialize m_replayGainSettings
-  m_replayGainSettings.iType = settings->GetInt(CSettings::SETTING_MUSICPLAYER_REPLAYGAINTYPE);
-  m_replayGainSettings.iPreAmp = settings->GetInt(CSettings::SETTING_MUSICPLAYER_REPLAYGAINPREAMP);
-  m_replayGainSettings.iNoGainPreAmp = settings->GetInt(CSettings::SETTING_MUSICPLAYER_REPLAYGAINNOGAINPREAMP);
-  m_replayGainSettings.bAvoidClipping = settings->GetBool(CSettings::SETTING_MUSICPLAYER_REPLAYGAINAVOIDCLIPPING);
+  CacheReplayGainSettings(*settings);
 
   // load the keyboard layouts
   if (!keyboardLayoutManager->Load())
@@ -3777,32 +3775,4 @@ void CApplication::CloseNetworkShares()
 
   for (const auto& vfsAddon : CServiceBroker::GetVFSAddonCache().GetAddonInstances())
     vfsAddon->DisconnectAll();
-}
-
-void CApplication::RegisterActionListener(IActionListener *listener)
-{
-  std::unique_lock<CCriticalSection> lock(m_critSection);
-  std::vector<IActionListener *>::iterator it = std::find(m_actionListeners.begin(), m_actionListeners.end(), listener);
-  if (it == m_actionListeners.end())
-    m_actionListeners.push_back(listener);
-}
-
-void CApplication::UnregisterActionListener(IActionListener *listener)
-{
-  std::unique_lock<CCriticalSection> lock(m_critSection);
-  std::vector<IActionListener *>::iterator it = std::find(m_actionListeners.begin(), m_actionListeners.end(), listener);
-  if (it != m_actionListeners.end())
-    m_actionListeners.erase(it);
-}
-
-bool CApplication::NotifyActionListeners(const CAction &action) const
-{
-  std::unique_lock<CCriticalSection> lock(m_critSection);
-  for (std::vector<IActionListener *>::const_iterator it = m_actionListeners.begin(); it != m_actionListeners.end(); ++it)
-  {
-    if ((*it)->OnAction(action))
-      return true;
-  }
-
-  return false;
 }

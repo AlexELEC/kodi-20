@@ -12,6 +12,7 @@
 #include "cores/VideoPlayer/DVDSubtitles/SubtitlesStyle.h"
 #include "cores/VideoPlayer/Interface/TimingConstants.h"
 #include "filesystem/SpecialProtocol.h"
+#include "settings/SettingsComponent.h"
 #include "settings/SubtitlesSettings.h"
 #include "utils/CSSUtils.h"
 #include "utils/CharsetConverter.h"
@@ -210,7 +211,8 @@ bool CWebVTTHandler::Initialize()
     m_cueCssStyleMapRegex.insert({item.first, reg});
   }
 
-  auto overrideStyles{KODI::SUBTITLES::CSubtitlesSettings::GetInstance().GetOverrideStyles()};
+  auto overrideStyles{
+      CServiceBroker::GetSettingsComponent()->GetSubtitlesSettings()->GetOverrideStyles()};
   m_overridePositions = (overrideStyles == KODI::SUBTITLES::OverrideStyles::STYLES_POSITIONS ||
                          overrideStyles == KODI::SUBTITLES::OverrideStyles::POSITIONS);
   m_overrideStyle = (overrideStyles == KODI::SUBTITLES::OverrideStyles::STYLES_POSITIONS ||
@@ -267,10 +269,10 @@ void CWebVTTHandler::DecodeLine(std::string line, std::vector<subtitleData>* sub
           int locHrs = 0;
           int locMins;
           double locSecs;
-          if (!regLocal.GetMatch(1).empty())
-            locHrs = std::stoi(regLocal.GetMatch(1).c_str());
-          locMins = std::stoi(regLocal.GetMatch(2).c_str());
-          locSecs = std::atof(regLocal.GetMatch(3).c_str());
+          if (!regLocal.GetMatch(2).empty())
+            locHrs = std::stoi(regLocal.GetMatch(2).c_str());
+          locMins = std::stoi(regLocal.GetMatch(3).c_str());
+          locSecs = std::atof(regLocal.GetMatch(4).c_str());
           m_hlsTimestampLocalUs =
               (static_cast<double>(locHrs * 3600 + locMins * 60) + locSecs) * DVD_TIME_BASE;
           // Converts a 90 kHz clock timestamp to a timestamp in microseconds

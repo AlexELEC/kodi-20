@@ -8,7 +8,9 @@
 
 #pragma once
 
+#include "BlurayStateSerializer.h"
 #include "DVDInputStream.h"
+
 #include <list>
 #include <memory>
 
@@ -76,7 +78,11 @@ public:
   void OnDown() override  { UserInput(BD_VK_DOWN); }
   void OnLeft() override { UserInput(BD_VK_LEFT); }
   void OnRight() override { UserInput(BD_VK_RIGHT); }
-  void OnMenu() override;
+
+  /*! \brief Open the Menu
+  * \return true if the menu is successfully opened, false otherwise
+  */
+  bool OnMenu() override;
   void OnBack() override
   {
     if(IsInMenu())
@@ -84,13 +90,19 @@ public:
   }
   void OnNext() override {}
   void OnPrevious() override {}
-  bool HasMenu() override;
+
+  /*!
+   * \brief Get the supported menu type
+   * \return The supported menu type
+  */
+  MenuType GetSupportedMenuType() override;
+
   bool IsInMenu() override;
   bool OnMouseMove(const CPoint &point) override  { return MouseMove(point); }
   bool OnMouseClick(const CPoint &point) override { return MouseClick(point); }
   void SkipStill() override;
-  bool GetState(std::string &xmlstate) override { return false; }
-  bool SetState(const std::string &xmlstate) override { return false; }
+  bool GetState(std::string& xmlstate) override;
+  bool SetState(const std::string& xmlstate) override;
   bool CanSeek() override;
 
 
@@ -174,4 +186,7 @@ protected:
     void FreeTitleInfo();
     std::unique_ptr<CDVDInputStreamFile> m_pstream = nullptr;
     std::string m_rootPath;
+
+    /*! Bluray state serializer handler */
+    CBlurayStateSerializer m_blurayStateSerializer;
 };

@@ -327,11 +327,16 @@ bool CDVDInputStreamBluray::Open()
     m_navmode = false;
     m_titleInfo = GetTitleFile(filename);
   }
-  else if (mode == BD_PLAYBACK_MAIN_TITLE ||
-           (resumable && m_item.m_lStartOffset == STARTOFFSET_RESUME))
+  else if (mode == BD_PLAYBACK_MAIN_TITLE)
   {
     m_navmode = false;
     m_titleInfo = GetTitleLongest();
+  }
+  else if (resumable && m_item.m_lStartOffset == STARTOFFSET_RESUME)
+  {
+    // resuming a bluray for which we have a saved state - the playlist will be open later on SetState
+    m_navmode = false;
+    return true;
   }
   else
   {
@@ -1118,28 +1123,36 @@ bool CDVDInputStreamBluray::MouseClick(const CPoint &point)
   return false;
 }
 
-void CDVDInputStreamBluray::OnMenu()
+bool CDVDInputStreamBluray::OnMenu()
 {
   if(m_bd == nullptr || !m_navmode)
   {
     CLog::Log(LOGDEBUG, "CDVDInputStreamBluray::OnMenu - navigation mode not enabled");
-    return;
+    return false;
   }
 
   // we can not use this event to track a possible popup menu state since bd-j blu-rays can
   // toggle the popup menu on their own without firing this event, and if they do this, our
   // internal tracking state would be wrong. So just process and return.
   if(bd_user_input(m_bd, -1, BD_VK_POPUP) >= 0)
-    return;
+  {
+    return true;
+  }
 
   CLog::Log(LOGDEBUG, "CDVDInputStreamBluray::OnMenu - popup failed, trying root");
 
   if (bd_user_input(m_bd, -1, BD_VK_ROOT_MENU) >= 0)
-    return;
+  {
+    return true;
+  }
 
   CLog::Log(LOGDEBUG, "CDVDInputStreamBluray::OnMenu - root failed, trying explicit");
-  if(bd_menu_call(m_bd, -1) <= 0)
+  if (bd_menu_call(m_bd, -1) <= 0)
+  {
     CLog::Log(LOGDEBUG, "CDVDInputStreamBluray::OnMenu - root failed");
+    return false;
+  }
+  return true;
 }
 
 bool CDVDInputStreamBluray::IsInMenu()
@@ -1176,9 +1189,13 @@ bool CDVDInputStreamBluray::CanSeek()
   return !IsInMenu() || !m_isInMainMenu;
 }
 
-bool CDVDInputStreamBluray::HasMenu()
+MenuType CDVDInputStreamBluray::GetSupportedMenuType()
 {
-  return m_navmode;
+  if (m_navmode)
+  {
+    return MenuType::NATIVE;
+  }
+  return MenuType::NONE;
 }
 
 void CDVDInputStreamBluray::SetupPlayerSettings()
@@ -1232,6 +1249,53 @@ bool CDVDInputStreamBluray::OpenStream(CFileItem &item)
   {
     CLog::Log(LOGERROR, "Error opening image file {}", CURL::GetRedacted(item.GetPath()));
     Close();
+    return false;
+  }
+
+  return true;
+}
+
+bool CDVDInputStreamBluray::GetState(std::string& xmlstate)
+{
+  if (!m_bd || !m_titleInfo)
+  {
+    return false;
+  }
+
+  BlurayState blurayState;
+  blurayState.playlistId = m_titleInfo->playlist;
+
+  if (!m_blurayStateSerializer.BlurayStateToXML(xmlstate, blurayState))
+  {
+    CLog::LogF(LOGWARNING, "Failed to serialize Bluray state");
+    return false;
+  }
+
+  return true;
+}
+
+bool CDVDInputStreamBluray::SetState(const std::string& xmlstate)
+{
+  if (!m_bd)
+    return false;
+
+  BlurayState blurayState;
+  if (!m_blurayStateSerializer.XMLToBlurayState(blurayState, xmlstate))
+  {
+    CLog::LogF(LOGWARNING, "Failed to deserialize Bluray state");
+    return false;
+  }
+
+  m_titleInfo = bd_get_playlist_info(m_bd, blurayState.playlistId, 0);
+  if (!m_titleInfo)
+  {
+    CLog::LogF(LOGERROR, "Open - failed to get title info");
+    return false;
+  }
+
+  if (!bd_select_playlist(m_bd, m_titleInfo->playlist))
+  {
+    CLog::LogF(LOGERROR, "Open - failed to select playlist {}", m_titleInfo->idx);
     return false;
   }
 
