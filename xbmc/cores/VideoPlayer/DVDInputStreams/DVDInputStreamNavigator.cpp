@@ -27,10 +27,40 @@
 #include "platform/Environment.h"
 #endif
 
-#define HOLDMODE_NONE 0
-#define HOLDMODE_HELD 1 /* set internally when we wish to flush demuxer */
-#define HOLDMODE_SKIP 2 /* set by inputstream user, when they wish to skip the held mode */
-#define HOLDMODE_DATA 3 /* set after hold mode has been exited, and action that inited it has been executed */
+namespace
+{
+constexpr int HOLDMODE_NONE = 0;
+/* set internally when we wish to flush demuxer */
+constexpr int HOLDMODE_HELD = 1;
+/* set by inputstream user, when they wish to skip the held mode */
+constexpr int HOLDMODE_SKIP = 2;
+/* set after hold mode has been exited, and action that inited it has been executed */
+constexpr int HOLDMODE_DATA = 3;
+
+// DVD Subpicture types
+constexpr int DVD_SUBPICTURE_TYPE_NOTSPECIFIED = 0;
+constexpr int DVD_SUBPICTURE_TYPE_LANGUAGE = 1;
+
+// DVD Subpicture language extensions
+constexpr int DVD_SUBPICTURE_LANG_EXT_NOTSPECIFIED = 0;
+constexpr int DVD_SUBPICTURE_LANG_EXT_NORMALCAPTIONS = 1;
+constexpr int DVD_SUBPICTURE_LANG_EXT_BIGCAPTIONS = 2;
+constexpr int DVD_SUBPICTURE_LANG_EXT_CHILDRENSCAPTIONS = 3;
+constexpr int DVD_SUBPICTURE_LANG_EXT_NORMALCC = 5;
+constexpr int DVD_SUBPICTURE_LANG_EXT_BIGCC = 6;
+constexpr int DVD_SUBPICTURE_LANG_EXT_CHILDRENSCC = 7;
+constexpr int DVD_SUBPICTURE_LANG_EXT_FORCED = 9;
+constexpr int DVD_SUBPICTURE_LANG_EXT_NORMALDIRECTORSCOMMENTS = 13;
+constexpr int DVD_SUBPICTURE_LANG_EXT_BIGDIRECTORSCOMMENTS = 14;
+constexpr int DVD_SUBPICTURE_LANG_EXT_CHILDRENDIRECTORSCOMMENTS = 15;
+
+// DVD Audio language extensions
+constexpr int DVD_AUDIO_LANG_EXT_NOTSPECIFIED = 0;
+constexpr int DVD_AUDIO_LANG_EXT_NORMALCAPTIONS = 1;
+constexpr int DVD_AUDIO_LANG_EXT_VISUALLYIMPAIRED = 2;
+constexpr int DVD_AUDIO_LANG_EXT_DIRECTORSCOMMENTS1 = 3;
+constexpr int DVD_AUDIO_LANG_EXT_DIRECTORSCOMMENTS2 = 4;
+} // namespace
 
 static int dvd_inputstreamnavigator_cb_seek(void * p_stream, uint64_t i_pos);
 static int dvd_inputstreamnavigator_cb_read(void * p_stream, void * buffer, int i_read);
@@ -131,12 +161,13 @@ bool CDVDInputStreamNavigator::Open()
   else
   {
     // find out what region dvd reports itself to be from, and use that as mask if available
-    vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
-    if (vm && vm->vmgi && vm->vmgi->vmgi_mat)
-      mask = ((vm->vmgi->vmgi_mat->vmg_category >> 16) & 0xff) ^ 0xff;
+    if (m_dll.dvdnav_get_disk_region_mask(m_dvdnav, &mask) == DVDNAV_STATUS_ERR)
+    {
+      CLog::LogF(LOGERROR, "Error getting DVD region code: {}",
+                 m_dll.dvdnav_err_to_string(m_dvdnav));
+      mask = 0xff;
+    }
   }
-  if(!mask)
-    mask = 0xff;
 
   CLog::Log(LOGDEBUG, "{} - Setting region mask {:02x}", __FUNCTION__, mask);
   m_dll.dvdnav_set_region_mask(m_dvdnav, mask);
@@ -616,23 +647,14 @@ bool CDVDInputStreamNavigator::SetActiveAudioStream(int iId)
   if (!m_dvdnav)
     return false;
 
-  vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
-  if (!vm)
-    return false;
-  if (!vm->state.pgc)
-    return false;
+  dvdnav_status_t ret = m_dll.dvdnav_set_active_stream(m_dvdnav, iId, DVD_AUDIO_STREAM);
+  if (ret == DVDNAV_STATUS_ERR)
+  {
+    CLog::LogF(LOGERROR, "dvdnav_set_active_stream (audio) failed: {}",
+               m_dll.dvdnav_err_to_string(m_dvdnav));
+  }
 
-  /* make sure stream is valid, if not don't allow it */
-  if (iId < 0 || iId >= 8)
-    return false;
-  else if (!(vm->state.pgc->audio_control[iId] & (1 << 15)))
-    return false;
-
-  if (vm->state.domain != VTS_DOMAIN && iId != 0)
-    return false;
-
-  vm->state.AST_REG = iId;
-  return true;
+  return ret == DVDNAV_STATUS_OK;
 }
 
 bool CDVDInputStreamNavigator::SetActiveSubtitleStream(int iId)
@@ -642,25 +664,14 @@ bool CDVDInputStreamNavigator::SetActiveSubtitleStream(int iId)
   if (!m_dvdnav)
     return false;
 
-  vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
-  if (!vm)
-    return false;
-  if (!vm->state.pgc)
-    return false;
+  dvdnav_status_t ret = m_dll.dvdnav_set_active_stream(m_dvdnav, iId, DVD_SUBTITLE_STREAM);
+  if (ret == DVDNAV_STATUS_ERR)
+  {
+    CLog::LogF(LOGERROR, "dvdnav_set_active_stream (subtitles) failed: {}",
+               m_dll.dvdnav_err_to_string(m_dvdnav));
+  }
 
-  /* make sure stream is valid, if not don't allow it */
-  if (iId < 0 || iId >= 32)
-    return false;
-  else if (!(vm->state.pgc->subp_control[iId] & (1U << 31)))
-    return false;
-
-  if (vm->state.domain != VTS_DOMAIN && iId != 0)
-    return false;
-
-  /* set subtitle stream without modifying visibility */
-  vm->state.SPST_REG = iId | (vm->state.SPST_REG & 0x40);
-
-  return true;
+  return ret == DVDNAV_STATUS_OK;
 }
 
 void CDVDInputStreamNavigator::ActivateButton()
@@ -904,60 +915,43 @@ SubtitleStreamInfo CDVDInputStreamNavigator::GetSubtitleStreamInfo(const int iId
 
 void CDVDInputStreamNavigator::SetSubtitleStreamName(SubtitleStreamInfo &info, const subp_attr_t &subp_attributes)
 {
-  if (subp_attributes.type == DVD_SUBPICTURE_TYPE_Language ||
-    subp_attributes.type == DVD_SUBPICTURE_TYPE_NotSpecified)
+  if (subp_attributes.type == DVD_SUBPICTURE_TYPE_LANGUAGE ||
+      subp_attributes.type == DVD_SUBPICTURE_TYPE_NOTSPECIFIED)
   {
     switch (subp_attributes.code_extension)
     {
-    case DVD_SUBPICTURE_LANG_EXT_NotSpecified:
-    case DVD_SUBPICTURE_LANG_EXT_ChildrensCaptions:
-      break;
+      case DVD_SUBPICTURE_LANG_EXT_NOTSPECIFIED:
+      case DVD_SUBPICTURE_LANG_EXT_CHILDRENSCAPTIONS:
+        break;
 
-    case DVD_SUBPICTURE_LANG_EXT_NormalCaptions:
-    case DVD_SUBPICTURE_LANG_EXT_NormalCC:
-    case DVD_SUBPICTURE_LANG_EXT_BigCaptions:
-    case DVD_SUBPICTURE_LANG_EXT_BigCC:
-    case DVD_SUBPICTURE_LANG_EXT_ChildrensCC:
-      info.flags = StreamFlags::FLAG_HEARING_IMPAIRED;
-      break;
-    case DVD_SUBPICTURE_LANG_EXT_Forced:
-      info.flags = StreamFlags::FLAG_FORCED;
-      break;
-    case DVD_SUBPICTURE_LANG_EXT_NormalDirectorsComments:
-    case DVD_SUBPICTURE_LANG_EXT_BigDirectorsComments:
-    case DVD_SUBPICTURE_LANG_EXT_ChildrensDirectorsComments:
-      info.name = g_localizeStrings.Get(37001);
-      break;
-    default:
-      break;
+      case DVD_SUBPICTURE_LANG_EXT_NORMALCAPTIONS:
+      case DVD_SUBPICTURE_LANG_EXT_NORMALCC:
+      case DVD_SUBPICTURE_LANG_EXT_BIGCAPTIONS:
+      case DVD_SUBPICTURE_LANG_EXT_BIGCC:
+      case DVD_SUBPICTURE_LANG_EXT_CHILDRENSCC:
+        info.flags = StreamFlags::FLAG_HEARING_IMPAIRED;
+        break;
+      case DVD_SUBPICTURE_LANG_EXT_FORCED:
+        info.flags = StreamFlags::FLAG_FORCED;
+        break;
+      case DVD_SUBPICTURE_LANG_EXT_NORMALDIRECTORSCOMMENTS:
+      case DVD_SUBPICTURE_LANG_EXT_BIGDIRECTORSCOMMENTS:
+      case DVD_SUBPICTURE_LANG_EXT_CHILDRENDIRECTORSCOMMENTS:
+        info.name = g_localizeStrings.Get(37001);
+        break;
+      default:
+        break;
     }
   }
 }
 
 int CDVDInputStreamNavigator::GetSubTitleStreamCount()
 {
-  if (!m_dvdnav) return 0;
-
-  vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
-
-  if (!vm) return 0;
-  if (!vm->state.pgc) return 0;
-
-  if (vm->state.domain == VTS_DOMAIN)
+  if (!m_dvdnav)
   {
-    int streamN = 0;
-    for (int i = 0; i < 32; i++)
-    {
-      if (vm->state.pgc->subp_control[i] & (1U << 31))
-        streamN++;
-    }
-    return streamN;
+    return 0;
   }
-  else
-  {
-    /* just for good measure say that non vts domain always has one */
-    return 1;
-  }
+  return m_dll.dvdnav_get_number_of_streams(m_dvdnav, DVD_SUBTITLE_STREAM);
 }
 
 int CDVDInputStreamNavigator::GetActiveAudioStream()
@@ -991,20 +985,20 @@ void CDVDInputStreamNavigator::SetAudioStreamName(AudioStreamInfo &info, const a
 {
   switch( audio_attributes.code_extension )
   {
-  case DVD_AUDIO_LANG_EXT_VisuallyImpaired:
-    info.name = g_localizeStrings.Get(37000);
-    info.flags = StreamFlags::FLAG_VISUAL_IMPAIRED;
-    break;
-  case DVD_AUDIO_LANG_EXT_DirectorsComments1:
-    info.name = g_localizeStrings.Get(37001);
-    break;
-  case DVD_AUDIO_LANG_EXT_DirectorsComments2:
-    info.name = g_localizeStrings.Get(37002);
-    break;
-  case DVD_AUDIO_LANG_EXT_NotSpecified:
-  case DVD_AUDIO_LANG_EXT_NormalCaptions:
-  default:
-    break;
+    case DVD_AUDIO_LANG_EXT_VISUALLYIMPAIRED:
+      info.name = g_localizeStrings.Get(37000);
+      info.flags = StreamFlags::FLAG_VISUAL_IMPAIRED;
+      break;
+    case DVD_AUDIO_LANG_EXT_DIRECTORSCOMMENTS1:
+      info.name = g_localizeStrings.Get(37001);
+      break;
+    case DVD_AUDIO_LANG_EXT_DIRECTORSCOMMENTS2:
+      info.name = g_localizeStrings.Get(37002);
+      break;
+    case DVD_AUDIO_LANG_EXT_NOTSPECIFIED:
+    case DVD_AUDIO_LANG_EXT_NORMALCAPTIONS:
+    default:
+      break;
   }
 
   switch(audio_attributes.audio_format)
@@ -1092,30 +1086,12 @@ AudioStreamInfo CDVDInputStreamNavigator::GetAudioStreamInfo(const int iId)
 
 int CDVDInputStreamNavigator::GetAudioStreamCount()
 {
-  if (!m_dvdnav) return 0;
-
-  vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
-
-  if (!vm) return 0;
-  if (!vm->state.pgc) return 0;
-
-  if (vm->state.domain == VTS_DOMAIN)
+  if (!m_dvdnav)
   {
-    int streamN = 0;
-    for (int i = 0; i < 8; i++)
-    {
-      if (vm->state.pgc->audio_control[i] & (1<<15))
-        streamN++;
-    }
-    return streamN;
+    return 0;
   }
-  else
-  {
-    /* just for good measure say that non vts domain always has one */
-    return 1;
-  }
+  return m_dll.dvdnav_get_number_of_streams(m_dvdnav, DVD_AUDIO_STREAM);
 }
-
 
 int CDVDInputStreamNavigator::GetAngleCount()
 {
@@ -1224,7 +1200,7 @@ bool CDVDInputStreamNavigator::PosTime(int iTimeInMsec)
 {
   if( m_dll.dvdnav_jump_to_sector_by_time(m_dvdnav, iTimeInMsec * 90, 0) == DVDNAV_STATUS_ERR )
   {
-    CLog::Log(LOGDEBUG, "dvdnav: dvdnav_time_search failed( {} )",
+    CLog::Log(LOGDEBUG, "dvdnav: dvdnav_jump_to_sector_by_time failed( {} )",
               m_dll.dvdnav_err_to_string(m_dvdnav));
     return false;
   }
@@ -1307,14 +1283,7 @@ void CDVDInputStreamNavigator::EnableSubtitleStream(bool bEnable)
   if (!m_dvdnav)
     return;
 
-  vm_t* vm = m_dll.dvdnav_get_vm(m_dvdnav);
-  if (!vm)
-    return;
-
-  if(bEnable)
-    vm->state.SPST_REG |= 0x40;
-  else
-    vm->state.SPST_REG &= ~0x40;
+  m_dll.dvdnav_toggle_spu_stream(m_dvdnav, static_cast<uint8_t>(bEnable));
 }
 
 bool CDVDInputStreamNavigator::IsSubtitleStreamEnabled()
