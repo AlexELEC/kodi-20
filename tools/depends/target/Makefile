@@ -25,16 +25,12 @@ DEPENDS = \
   libass \
   libbluray \
   libcec \
-  libdvdcss \
-  libdvdnav \
-  libdvdread \
   libffi \
   libgcrypt \
   libgpg-error \
   libjpeg-turbo \
   liblzo2 \
   libmicrohttpd \
-  libnfs \
   libplist \
   libpng \
   libshairplay \
@@ -46,7 +42,6 @@ DEPENDS = \
   nghttp2 \
   openssl \
   p8-platform \
-  pcre \
   python3 \
   pythonmodule-pil \
   pythonmodule-pycryptodome \
@@ -83,7 +78,7 @@ endif
 
 ifeq ($(OS),android)
   EXCLUDED_DEPENDS = libcec libusb gtest
-  DEPENDS += dummy-libxbmc libuuid libzip
+  DEPENDS += dummy-libxbmc libuuid
   PYMODULE_DEPS = dummy-libxbmc
   LIBUUID = libuuid
 endif
@@ -148,8 +143,6 @@ libcdio-gplv3: $(ICONV)
 libcdio: $(ICONV)
 libcec: p8-platform
 libdrm: meson-cross-file
-libdvdnav: libdvdread
-libdvdread: libdvdcss
 libevdev: libudev
 libgcrypt: libgpg-error
 libinput: mtdev libevdev meson-cross-file
