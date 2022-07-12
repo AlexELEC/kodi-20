@@ -146,6 +146,11 @@ public:
    */
   bool IsForcedMargins() const { return !m_overridePositions; }
 
+  /*
+   * \brief Set the period start pts to sync subtitles
+   */
+  void SetPeriodStart(double pts) { m_offset = pts; }
+
 protected:
   void CalculateTextPosition(std::string& subtitleText);
   void ConvertSubtitle(std::string& text);
@@ -178,8 +183,6 @@ private:
   bool m_overrideStyle{false};
   bool m_overridePositions{false};
   WebvttSection m_currentSection{WebvttSection::UNDEFINED};
-  double m_hlsTimestampMpegTsUs{0};
-  double m_hlsTimestampLocalUs{0};
   CRegExp m_cueTimeRegex;
   std::map<std::string, CRegExp> m_cuePropsMapRegex;
   CGUIColorManager m_colorManager;
@@ -191,4 +194,5 @@ private:
   std::vector<webvttCssStyle> m_cueCssStyles;
   bool m_CSSColorsLoaded{false};
   std::vector<std::pair<std::string, UTILS::COLOR::ColorInfo>> m_CSSColors;
+  double m_offset{0.0};
 };
