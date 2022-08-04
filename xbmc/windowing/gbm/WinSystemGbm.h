@@ -87,6 +87,11 @@ public:
   void Register(IDispResource* resource) override;
   void Unregister(IDispResource* resource) override;
 
+  bool SetHDR(const VideoPicture* videoPicture) override;
+  bool IsHDRDisplay() override;
+  HDR_STATUS ToggleHDR() override;
+  HDR_STATUS GetOSHDRStatus() override;
+
   std::shared_ptr<CVideoLayerBridge> GetVideoLayerBridge() const { return m_videoLayerBridge; }
   void RegisterVideoLayerBridge(std::shared_ptr<CVideoLayerBridge> bridge)
   {
@@ -95,11 +100,6 @@ public:
 
   CGBMUtils::CGBMDevice* GetGBMDevice() const { return m_GBM->GetDevice(); }
   std::shared_ptr<CDRMUtils> GetDrm() const { return m_DRM; }
-
-  bool SetHDR(const VideoPicture* videoPicture) override;
-  bool IsHDRDisplay() override;
-  HDR_STATUS ToggleHDR() override;
-  HDR_STATUS GetOSHDRStatus() override;
 
   std::vector<std::string> GetConnectedOutputs() override;
 
