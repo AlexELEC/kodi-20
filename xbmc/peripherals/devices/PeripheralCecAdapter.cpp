@@ -8,8 +8,8 @@
 
 #include "PeripheralCecAdapter.h"
 
-#include "Application.h"
 #include "ServiceBroker.h"
+#include "application/Application.h"
 #include "dialogs/GUIDialogKaiToast.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIWindowManager.h"
@@ -563,6 +563,8 @@ void CPeripheralCecAdapter::SetMenuLanguage(const char* strLanguage)
     strGuiLanguage = "cs_cz";
   else if (!strcmp(strLanguage, "dan"))
     strGuiLanguage = "da_dk";
+  else if (!strcmp(strLanguage, "deu"))
+    strGuiLanguage = "de_de";
   else if (!strcmp(strLanguage, "dut"))
     strGuiLanguage = "nl_nl";
   else if (!strcmp(strLanguage, "eng"))

@@ -8,14 +8,15 @@
 
 #pragma once
 
-#include "ApplicationPlayer.h"
-#include "ApplicationStackHelper.h"
 #include "ServiceManager.h"
 #include "application/ApplicationActionListeners.h"
+#include "application/ApplicationEnums.h"
+#include "application/ApplicationPlayer.h"
 #include "application/ApplicationPlayerCallback.h"
 #include "application/ApplicationPowerHandling.h"
 #include "application/ApplicationSettingsHandling.h"
 #include "application/ApplicationSkinHandling.h"
+#include "application/ApplicationStackHelper.h"
 #include "application/ApplicationVolumeHandling.h"
 #include "cores/IPlayerCallback.h"
 #include "guilib/IMsgTargetCallback.h"
@@ -84,22 +85,6 @@ namespace MUSIC_INFO
   class CMusicInfoScanner;
 }
 
-enum StartupAction
-{
-  STARTUP_ACTION_NONE = 0,
-  STARTUP_ACTION_PLAY_TV,
-  STARTUP_ACTION_PLAY_RADIO
-};
-
-// Do not change the numbers; external scripts depend on them
-enum
-{
-  EXITCODE_QUIT = 0,
-  EXITCODE_POWERDOWN = 64,
-  EXITCODE_RESTARTAPP = 65,
-  EXITCODE_REBOOT = 66,
-};
-
 class CApplication : public IWindowManagerCallback,
                      public IMsgTargetCallback,
                      public KODI::MESSAGING::IMessageTarget,
@@ -149,8 +134,11 @@ public:
   int  GetMessageMask() override;
   void OnApplicationMessage(KODI::MESSAGING::ThreadMessage* pMsg) override;
 
-  bool PlayMedia(CFileItem& item, const std::string &player, int iPlaylist);
-  bool ProcessAndStartPlaylist(const std::string& strPlayList, PLAYLIST::CPlayList& playlist, int iPlaylist, int track=0);
+  bool PlayMedia(CFileItem& item, const std::string& player, PLAYLIST::Id playlistId);
+  bool ProcessAndStartPlaylist(const std::string& strPlayList,
+                               PLAYLIST::CPlayList& playlist,
+                               PLAYLIST::Id playlistId,
+                               int track = 0);
   bool PlayFile(CFileItem item, const std::string& player, bool bRestart = false);
   void StopPlaying();
   void Restart(bool bSamePosition = true);
