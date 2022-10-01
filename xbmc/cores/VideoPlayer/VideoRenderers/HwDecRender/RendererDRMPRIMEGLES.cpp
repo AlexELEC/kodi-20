@@ -560,7 +560,7 @@ bool CRendererDRMPRIMEGLES::ConfigChanged(const VideoPicture& picture)
   return false;
 }
 
-bool CRendererDRMPRIMEGLES::Supports(ERENDERFEATURE feature)
+bool CRendererDRMPRIMEGLES::Supports(ERENDERFEATURE feature) const
 {
   switch (feature)
   {
@@ -578,7 +578,7 @@ bool CRendererDRMPRIMEGLES::Supports(ERENDERFEATURE feature)
   }
 }
 
-bool CRendererDRMPRIMEGLES::Supports(ESCALINGMETHOD method)
+bool CRendererDRMPRIMEGLES::Supports(ESCALINGMETHOD method) const
 {
   switch (method)
   {

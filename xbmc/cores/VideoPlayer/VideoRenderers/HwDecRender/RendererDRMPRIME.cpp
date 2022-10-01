@@ -265,7 +265,7 @@ bool CRendererDRMPRIME::ConfigChanged(const VideoPicture& picture)
   return false;
 }
 
-bool CRendererDRMPRIME::Supports(ERENDERFEATURE feature)
+bool CRendererDRMPRIME::Supports(ERENDERFEATURE feature) const
 {
   switch (feature)
   {
@@ -279,7 +279,7 @@ bool CRendererDRMPRIME::Supports(ERENDERFEATURE feature)
   }
 }
 
-bool CRendererDRMPRIME::Supports(ESCALINGMETHOD method)
+bool CRendererDRMPRIME::Supports(ESCALINGMETHOD method) const
 {
   return false;
 }

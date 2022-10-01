@@ -9,7 +9,7 @@
 #pragma once
 
 #include "ServiceManager.h"
-#include "application/ApplicationActionListeners.h"
+#include "application/ApplicationComponents.h"
 #include "application/ApplicationEnums.h"
 #include "application/ApplicationPlayer.h"
 #include "application/ApplicationPlayerCallback.h"
@@ -88,7 +88,7 @@ namespace MUSIC_INFO
 class CApplication : public IWindowManagerCallback,
                      public IMsgTargetCallback,
                      public KODI::MESSAGING::IMessageTarget,
-                     public CApplicationActionListeners,
+                     public CApplicationComponents,
                      public CApplicationPlayerCallback,
                      public CApplicationPowerHandling,
                      public CApplicationSettingsHandling,
@@ -252,7 +252,7 @@ protected:
 
   void HandlePortEvents();
 
-  CInertialScrollingHandler *m_pInertialScrollingHandler;
+  std::unique_ptr<CInertialScrollingHandler> m_pInertialScrollingHandler;
 
   std::vector<ADDON::AddonInfoPtr>
       m_incompatibleAddons; /*!< Result of addon migration (incompatible addon infos) */
