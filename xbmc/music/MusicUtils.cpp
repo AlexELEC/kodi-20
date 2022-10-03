@@ -8,9 +8,12 @@
 
 #include "MusicUtils.h"
 
+#include "FileItem.h"
 #include "PlayListPlayer.h"
 #include "ServiceBroker.h"
 #include "application/Application.h"
+#include "application/ApplicationComponents.h"
+#include "application/ApplicationPlayer.h"
 #include "dialogs/GUIDialogSelect.h"
 #include "guilib/GUIComponent.h"
 #include "guilib/GUIKeyboardFactory.h"
@@ -19,7 +22,6 @@
 #include "music/MusicDatabase.h"
 #include "music/tags/MusicInfoTag.h"
 #include "playlists/PlayList.h"
-#include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/JobManager.h"
@@ -130,7 +132,9 @@ namespace MUSIC_UTILS
       }
 
       // Similarly update the art of the currently playing song so it shows on OSD
-      if (g_application.GetAppPlayer().IsPlayingAudio() && g_application.CurrentFileItem().HasMusicInfoTag())
+      const auto& components = CServiceBroker::GetAppComponents();
+      const auto appPlayer = components.GetComponent<CApplicationPlayer>();
+      if (appPlayer->IsPlayingAudio() && g_application.CurrentFileItem().HasMusicInfoTag())
       {
         CFileItemPtr songitem = CFileItemPtr(new CFileItem(g_application.CurrentFileItem()));
         if (HasSongExtraArtChanged(songitem, type, itemID, db))
@@ -179,7 +183,7 @@ namespace MUSIC_UTILS
     }
   };
 
-  void UpdateArtJob(const CFileItemPtr& pItem,
+  void UpdateArtJob(const std::shared_ptr<CFileItem>& pItem,
                     const std::string& strType,
                     const std::string& strArt)
   {
@@ -335,7 +339,7 @@ namespace MUSIC_UTILS
     return -1;
   }
 
-  void UpdateSongRatingJob(const CFileItemPtr& pItem, int userrating)
+  void UpdateSongRatingJob(const std::shared_ptr<CFileItem>& pItem, int userrating)
   {
     // Asynchronously update the song user rating in music library
     const CMusicInfoTag *tag = pItem->GetMusicInfoTag();
