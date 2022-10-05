@@ -26,7 +26,6 @@
 #include "guilib/guiinfo/GUIInfoHelper.h"
 #include "guilib/guiinfo/GUIInfoLabels.h"
 #include "utils/StringUtils.h"
-#include "utils/TimeUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/Variant.h"
 #include "utils/log.h"
@@ -134,7 +133,11 @@ std::string CPlayerGUIInfo::GetSeekTime(TIME_FORMAT format) const
 
 void CPlayerGUIInfo::SetShowInfo(bool showinfo)
 {
-  m_playerShowInfo = showinfo;
+  if (showinfo != m_playerShowInfo)
+  {
+    m_playerShowInfo = showinfo;
+    m_events.Publish(PlayerShowInfoChangedEvent(m_playerShowInfo));
+  }
 }
 
 bool CPlayerGUIInfo::ToggleShowInfo()
@@ -370,12 +373,6 @@ bool CPlayerGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWi
     case PLAYER_VOLUME:
       value = static_cast<int>(g_application.GetVolumePercent());
       return true;
-    case PLAYER_SUBTITLE_DELAY:
-      value = g_application.GetSubtitleDelay();
-      return true;
-    case PLAYER_AUDIO_DELAY:
-      value = g_application.GetAudioDelay();
-      return true;
     case PLAYER_PROGRESS:
       value = std::lrintf(g_application.GetPercentage());
       return true;
@@ -388,6 +385,8 @@ bool CPlayerGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWi
     case PLAYER_CACHELEVEL:
     case PLAYER_CHAPTER:
     case PLAYER_CHAPTERCOUNT:
+    case PLAYER_AUDIO_DELAY:
+    case PLAYER_SUBTITLE_DELAY:
     {
       const auto& components = CServiceBroker::GetAppComponents();
       const auto appPlayer = components.GetComponent<CApplicationPlayer>();
@@ -401,6 +400,12 @@ bool CPlayerGUIInfo::GetInt(int& value, const CGUIListItem *gitem, int contextWi
           return true;
         case PLAYER_CHAPTERCOUNT:
           value = appPlayer->GetChapterCount();
+          return true;
+        case PLAYER_SUBTITLE_DELAY:
+          value = appPlayer->GetSubtitleDelay();
+          return true;
+        case PLAYER_AUDIO_DELAY:
+          value = appPlayer->GetAudioDelay();
           return true;
         default:
           return false;
