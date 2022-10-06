@@ -10,6 +10,7 @@
 #include "DllPaths.h"
 #include "GUIUserMessages.h"
 #include "application/Application.h"
+#include "utils/StringUtils.h"
 #include "utils/URIUtils.h"
 #include "utils/log.h"
 
@@ -28,6 +29,7 @@
 
 #include <mutex>
 
+#include "PlatformDefs.h"
 
 // platform strings are based on http://theiphonewiki.com/wiki/Models
 const char* CDarwinUtils::getIosPlatformString(void)
