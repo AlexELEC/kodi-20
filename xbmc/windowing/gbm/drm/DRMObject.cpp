@@ -9,6 +9,7 @@
 #include "DRMObject.h"
 
 #include "utils/log.h"
+#include "utils/StringUtils.h"
 
 #include <algorithm>
 #include <array>
