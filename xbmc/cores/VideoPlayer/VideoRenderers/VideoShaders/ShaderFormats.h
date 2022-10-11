@@ -25,6 +25,7 @@ enum EShaderFormat
   SHADER_YUY2,
   SHADER_UYVY,
   SHADER_NV12_RRG,
+  SHADER_OES,
   SHADER_MAX,
 };
 

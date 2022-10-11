@@ -313,6 +313,37 @@ if(FFMPEG_FOUND)
   endif()
 
   set_property(GLOBAL APPEND PROPERTY INTERNAL_DEPS_PROP ffmpeg)
+
+  if (NOT DAV1D_FOUND)
+    message(STATUS "dav1d not found, internal ffmpeg build will be missing AV1 support!")
+  endif()
+
+  find_package(LibDRM)
+
+  set(FFMPEG_OPTIONS -DENABLE_CCACHE=${ENABLE_CCACHE}
+                     -DCCACHE_PROGRAM=${CCACHE_PROGRAM}
+                     -DENABLE_VAAPI=${ENABLE_VAAPI}
+                     -DENABLE_VDPAU=${ENABLE_VDPAU}
+                     -DENABLE_DAV1D=${DAV1D_FOUND}
+                     -DEXTRA_FLAGS=${FFMPEG_EXTRA_FLAGS}
+                     -DENABLE_LIBDRM=${LIBDRM_FOUND})
+
+  if(KODI_DEPENDSBUILD)
+    set(CROSS_ARGS -DDEPENDS_PATH=${DEPENDS_PATH}
+                   -DPKG_CONFIG_EXECUTABLE=${PKG_CONFIG_EXECUTABLE}
+                   -DCROSSCOMPILING=${CMAKE_CROSSCOMPILING}
+                   -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+                   -DOS=${OS}
+                   -DCMAKE_AR=${CMAKE_AR})
+  endif()
+
+  set(LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
+  list(APPEND LINKER_FLAGS ${SYSTEM_LDFLAGS})
+
+  if (ENABLE_INTERNAL_DAV1D)
+    add_dependencies(ffmpeg dav1d)
+  endif()
+
 endif()
 
 mark_as_advanced(FFMPEG_INCLUDE_DIRS FFMPEG_LIBRARIES FFMPEG_LDFLAGS FFMPEG_DEFINITIONS FFMPEG_FOUND)
