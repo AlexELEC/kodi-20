@@ -373,6 +373,7 @@ std::vector<CDemuxStream*> CDVDDemuxClient::GetStreams() const
 {
   std::vector<CDemuxStream*> streams;
 
+  streams.reserve(m_streams.size());
   for (auto &st : m_streams)
     streams.push_back(st.second.get());
 
