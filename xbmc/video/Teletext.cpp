@@ -22,6 +22,8 @@
 #include "utils/log.h"
 #include "windowing/GraphicContext.h"
 
+using namespace std::chrono_literals;
+
 static inline void SDL_memset4(uint32_t* dst, uint32_t val, size_t len)
 {
   for (; len > 0; --len)
@@ -703,6 +705,7 @@ void CTeletextDecoder::EndDecoder()
   /* close freetype */
   if (m_Manager)
   {
+    FTC_Node_Unref(m_anode, m_Manager);
     FTC_Manager_Done(m_Manager);
   }
   if (m_Library)
@@ -1165,7 +1168,7 @@ void CTeletextDecoder::RenderPage()
         if (c == NULL)
           return;
 
-        c = {};
+        *c = {};
         m_RenderInfo.SubtitleCache[j] = c;
       }
       c->Valid = true;
@@ -1292,16 +1295,37 @@ void CTeletextDecoder::RenderPage()
         }
       }
 
-      /* Update on every changed second */
-      if (m_txtCache->TimeString[7] != prevTimeSec)
+      if (!IsSubtitlePage(m_txtCache->Page))
       {
-        prevTimeSec = m_txtCache->TimeString[7];
+        /* Update on every changed second */
+        if (m_txtCache->TimeString[7] != prevTimeSec)
+        {
+          prevTimeSec = m_txtCache->TimeString[7];
+          m_updateTexture = true;
+        }
+      }
+      else
+      {
         m_updateTexture = true;
       }
     }
     DoFlashing(StartRow);
     m_txtCache->NationalSubset = national_subset_bak;
   }
+}
+
+bool CTeletextDecoder::IsSubtitlePage(int pageNumber) const
+{
+  if (!m_txtCache)
+    return false;
+
+  for (const auto subPage : m_txtCache->SubtitlePages)
+  {
+    if (subPage.page == pageNumber)
+      return true;
+  }
+
+  return false;
 }
 
 void CTeletextDecoder::DoFlashing(int startrow)
@@ -1316,7 +1340,9 @@ void CTeletextDecoder::DoFlashing(int startrow)
   /* Flashing */
   TextPageAttr_t flashattr;
   char flashchar;
-  long flashphase = std::chrono::steady_clock::now().time_since_epoch().count() % 1000;
+  std::chrono::milliseconds flashphase = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                             std::chrono::steady_clock::now().time_since_epoch()) %
+                                         1000;
 
   int srow = startrow;
   int erow = 24;
@@ -1348,25 +1374,38 @@ void CTeletextDecoder::DoFlashing(int startrow)
         switch (flashattr.flashing &0x1c) // Flash Rate
         {
           case 0x00 :  // 1 Hz
-            if (flashphase>500) doflash = true;
+            if (flashphase > 500ms)
+              doflash = true;
             break;
           case 0x04 :  // 2 Hz  Phase 1
-            if (flashphase<250) doflash = true;
+            if (flashphase < 250ms)
+              doflash = true;
             break;
           case 0x08 :  // 2 Hz  Phase 2
-            if (flashphase>=250 && flashphase<500) doflash = true;
+            if (flashphase >= 250ms && flashphase < 500ms)
+              doflash = true;
             break;
           case 0x0c :  // 2 Hz  Phase 3
-            if (flashphase>=500 && flashphase<750) doflash = true;
+            if (flashphase >= 500ms && flashphase < 750ms)
+              doflash = true;
             break;
           case 0x10 :  // incremental flash
             incflash++;
             if (incflash>3) incflash = 1;
             switch (incflash)
             {
-              case 1: if (flashphase<250) doflash = true; break;
-              case 2: if (flashphase>=250 && flashphase<500) doflash = true;break;
-              case 3: if (flashphase>=500 && flashphase<750) doflash = true;
+              case 1:
+                if (flashphase < 250ms)
+                  doflash = true;
+                break;
+              case 2:
+                if (flashphase >= 250ms && flashphase < 500ms)
+                  doflash = true;
+                break;
+              case 3:
+                if (flashphase >= 500ms && flashphase < 750ms)
+                  doflash = true;
+                break;
             }
             break;
           case 0x14 :  // decremental flash
@@ -1374,9 +1413,18 @@ void CTeletextDecoder::DoFlashing(int startrow)
             if (decflash<1) decflash = 3;
             switch (decflash)
             {
-              case 1: if (flashphase<250) doflash = true; break;
-              case 2: if (flashphase>=250 && flashphase<500) doflash = true;break;
-              case 3: if (flashphase>=500 && flashphase<750) doflash = true;
+              case 1:
+                if (flashphase < 250ms)
+                  doflash = true;
+                break;
+              case 2:
+                if (flashphase >= 250ms && flashphase < 500ms)
+                  doflash = true;
+                break;
+              case 3:
+                if (flashphase >= 500ms && flashphase < 750ms)
+                  doflash = true;
+                break;
             }
             break;
 
@@ -2255,7 +2303,7 @@ void CTeletextDecoder::RenderCharIntern(TextRenderInfo_t* RenderInfo, int Char, 
     return;
   }
 
-  if (FTC_SBitCache_Lookup(m_Cache, &m_TypeTTF, glyph, &m_sBit, NULL) != 0)
+  if (FTC_SBitCache_Lookup(m_Cache, &m_TypeTTF, glyph, &m_sBit, &m_anode) != 0)
   {
     FillRect(m_TextureBuffer, m_RenderInfo.Width, m_RenderInfo.PosX, m_RenderInfo.PosY + yoffset, curfontwidth, m_RenderInfo.FontHeight, bgcolor);
     m_RenderInfo.PosX += curfontwidth;
@@ -2282,7 +2330,7 @@ void CTeletextDecoder::RenderCharIntern(TextRenderInfo_t* RenderInfo, int Char, 
       Char = G2table[0][0x20+ Attribute->diacrit];
     if ((glyph = FT_Get_Char_Index(m_Face, Char)))
     {
-      if (FTC_SBitCache_Lookup(m_Cache, &m_TypeTTF, glyph, &sbit_diacrit, NULL) == 0)
+      if (FTC_SBitCache_Lookup(m_Cache, &m_TypeTTF, glyph, &sbit_diacrit, &m_anode) == 0)
       {
         sbitbuffer = localbuffer;
         memcpy(sbitbuffer,m_sBit->buffer,m_sBit->pitch*m_sBit->height);
