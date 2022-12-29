@@ -618,12 +618,17 @@ void CGUIIncludes::ResolveParametersForNode(TiXmlElement *node, const Params& pa
       else if (result != NO_PARAMS_FOUND)
         child->SetValue(newValue);
     }
-    else if (child->Type() == TiXmlNode::TINYXML_ELEMENT)
+    else if (child->Type() == TiXmlNode::TINYXML_ELEMENT ||
+             child->Type() == TiXmlNode::TINYXML_COMMENT)
     {
       do
       {
-        TiXmlElement *next = child->NextSiblingElement();   // save next as current child might be removed from the tree
-        ResolveParametersForNode(static_cast<TiXmlElement *>(child), params);
+        // save next as current child might be removed from the tree
+        TiXmlElement* next = child->NextSiblingElement();
+
+        if (child->Type() == TiXmlNode::TINYXML_ELEMENT)
+          ResolveParametersForNode(static_cast<TiXmlElement*>(child), params);
+
         child = next;
       }
       while (child);
