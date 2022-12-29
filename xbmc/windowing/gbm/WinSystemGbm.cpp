@@ -443,3 +443,26 @@ bool CWinSystemGbm::IsHDRDisplay()
   // we have no way to know if the display is actually HDR capable and we blindly set the HDR metadata
   return connector->SupportsProperty("HDR_OUTPUT_METADATA");
 }
+
+HDR_STATUS CWinSystemGbm::ToggleHDR()
+{
+  return HDR_STATUS::HDR_UNSUPPORTED;
+}
+
+HDR_STATUS CWinSystemGbm::GetOSHDRStatus()
+{
+  auto drm = std::dynamic_pointer_cast<CDRMAtomic>(m_DRM);
+  if (!drm)
+    return HDR_STATUS::HDR_UNSUPPORTED;
+  ;
+
+  auto connector = drm->GetConnector();
+
+  if (!connector->SupportsProperty("HDR_OUTPUT_METADATA"))
+    return HDR_STATUS::HDR_UNSUPPORTED;
+
+  if (connector->GetProperty("HDR_OUTPUT_METADATA") != 0)
+    return HDR_STATUS::HDR_ON;
+
+  return HDR_STATUS::HDR_OFF;
+}

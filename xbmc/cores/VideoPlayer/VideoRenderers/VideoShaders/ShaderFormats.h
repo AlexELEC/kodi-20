@@ -25,6 +25,7 @@ enum EShaderFormat
   SHADER_YUY2,
   SHADER_UYVY,
   SHADER_NV12_RRG,
+  SHADER_OES,
   SHADER_MAX,
 };
 
@@ -54,6 +55,7 @@ private:
       {SHADER_YUY2, "YUY2"},
       {SHADER_UYVY, "UYVY"},
       {SHADER_NV12_RRG, "NV12 red/red/green"},
+      {SHADER_OES, "OES"},
   });
 
   static_assert(SHADER_MAX == shaderFormatMap.size(),

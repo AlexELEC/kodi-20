@@ -100,6 +100,7 @@ ifeq ($(OS),linux)
   DEPENDS += dbus libuuid alsa-lib libdrm libxkbcommon libinput libudev libevdev mtdev wayland waylandpp wayland-protocols linux-system-x11-libs
   ALSA_LIB = alsa-lib
   LIBUUID = libuuid
+  LIBDRM = libdrm
 
   ifeq ($(RENDER_SYSTEM),gl)
     WAYLANDPP_DEPS += linux-system-gl-libs
@@ -127,7 +128,7 @@ crossguid: $(LIBUUID)
 curl: openssl nghttp2
 dav1d: meson-cross-file
 dbus: expat
-ffmpeg: $(ICONV) $(ZLIB) bzip2 gnutls dav1d $(LIBVA)
+ffmpeg: $(ICONV) $(ZLIB) bzip2 gnutls dav1d $(LIBVA) $(LIBDRM)
 fontconfig: freetype2 expat $(ICONV) $(LIBUUID) meson-cross-file
 freetype2: bzip2 harfbuzz $(ZLIB)
 fribidi: meson-cross-file
