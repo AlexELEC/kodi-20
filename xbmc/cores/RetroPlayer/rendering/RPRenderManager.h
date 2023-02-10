@@ -39,6 +39,7 @@ class CRPProcessInfo;
 class IGUIRenderSettings;
 class IRenderBuffer;
 class IRenderBufferPool;
+struct VideoStreamBuffer;
 
 /*!
  * \brief Renders video frames provided by the game loop
@@ -81,8 +82,7 @@ public:
                  unsigned int nominalHeight,
                  unsigned int maxWidth,
                  unsigned int maxHeight);
-  bool GetVideoBuffer(
-      unsigned int width, unsigned int height, AVPixelFormat& format, uint8_t*& data, size_t& size);
+  std::vector<VideoStreamBuffer> GetVideoBuffers(unsigned int width, unsigned int height);
   void AddFrame(const uint8_t* data,
                 size_t size,
                 unsigned int width,
@@ -108,19 +108,20 @@ public:
   bool SupportsRenderFeature(RENDERFEATURE feature) const override;
   bool SupportsScalingMethod(SCALINGMETHOD method) const override;
 
-  void SaveThumbnail(const std::string& path);
+  // Savestate functions
+  void SaveThumbnail(const std::string& thumbnailPath);
 
 private:
   /*!
    * \brief Get or create a renderer compatible with the given render settings
    */
-  std::shared_ptr<CRPBaseRenderer> GetRenderer(const IGUIRenderSettings* renderSettings);
+  std::shared_ptr<CRPBaseRenderer> GetRendererForSettings(const IGUIRenderSettings* renderSettings);
 
   /*!
    * \brief Get or create a renderer for the given buffer pool and render settings
    */
-  std::shared_ptr<CRPBaseRenderer> GetRenderer(IRenderBufferPool* bufferPool,
-                                               const CRenderSettings& renderSettings);
+  std::shared_ptr<CRPBaseRenderer> GetRendererForPool(IRenderBufferPool* bufferPool,
+                                                      const CRenderSettings& renderSettings);
 
   /*!
    * \brief Render a frame using the given renderer
@@ -188,6 +189,9 @@ private:
 
   void CheckFlush();
 
+  void GetVideoFrame(IRenderBuffer*& readableBuffer, std::vector<uint8_t>& cachedFrame);
+  void FreeVideoFrame(IRenderBuffer* readableBuffer, std::vector<uint8_t> cachedFrame);
+
   // Construction parameters
   CRPProcessInfo& m_processInfo;
   CRenderContext& m_renderContext;
@@ -205,10 +209,11 @@ private:
   std::set<std::shared_ptr<CRPBaseRenderer>> m_renderers;
   std::vector<IRenderBuffer*> m_pendingBuffers; // Only access from game thread
   std::vector<IRenderBuffer*> m_renderBuffers;
-  std::map<AVPixelFormat, SwsContext*> m_scalers;
+  std::map<AVPixelFormat, std::map<AVPixelFormat, SwsContext*>> m_scalers; // From -> to -> context
   std::vector<uint8_t> m_cachedFrame;
   unsigned int m_cachedWidth = 0;
   unsigned int m_cachedHeight = 0;
+  unsigned int m_cachedRotationCCW{0};
 
   // State parameters
   enum class RENDER_STATE
