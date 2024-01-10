@@ -2785,9 +2785,7 @@ bool CApplication::OnMessage(CGUIMessage& message)
                                                          m_itemCurrentFile, param);
 
       // we don't want a busy dialog when switching channels
-      const auto appPlayer = GetComponent<CApplicationPlayer>();
-      if (!m_itemCurrentFile->IsLiveTV() ||
-          (!appPlayer->IsPlayingVideo() && !appPlayer->IsPlayingAudio()))
+      if (!m_itemCurrentFile->IsLiveTV())
       {
         CGUIDialogBusy* dialog =
             CServiceBroker::GetGUI()->GetWindowManager().GetWindow<CGUIDialogBusy>(
