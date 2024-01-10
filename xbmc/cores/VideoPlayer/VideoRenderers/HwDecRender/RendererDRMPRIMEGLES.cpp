@@ -539,6 +539,7 @@ void CRendererDRMPRIMEGLES::RenderUpdate(
 
   m_progressiveShader->Disable();
 
+  buf.fence->DestroyFence();
   buf.fence->CreateFence();
 
   VerifyGLState();
